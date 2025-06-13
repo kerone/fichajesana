@@ -539,6 +539,7 @@
                 <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importar Datos</button>
                 <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(event)">
                 <button class="btn btn-primary" onclick="syncWithFirebase()">🔄 Sincronizar</button>
+                <button class="btn" onclick="resetCurrentSession()" style="background: #dc3545; color: white;">🔄 Reset Sesión</button>
             </div>
 
             <div id="syncStatus"></div>
@@ -1868,6 +1869,24 @@
                 updateRegistroTable();
                 updateSummary();
                 
+                if (firebaseInitialized) {
+                    syncWithFirebase();
+                }
+            }
+        }
+
+        function resetCurrentSession() {
+            if (confirm('¿Estás seguro de que quieres resetear la sesión actual? Esto cancelará el fichaje en curso.')) {
+                currentSession = null;
+                localStorage.removeItem('currentSession');
+                updateButtonsState();
+                showSyncStatus('✅ Sesión reseteada correctamente', 'sync-success');
+                
+                setTimeout(() => {
+                    document.getElementById('syncStatus').innerHTML = '';
+                }, 2000);
+                
+                // Sync con Firebase si está disponible
                 if (firebaseInitialized) {
                     syncWithFirebase();
                 }
