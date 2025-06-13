@@ -463,6 +463,27 @@
             border: 1px solid #bee5eb;
         }
 
+        .edit-modal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .edit-section {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+
+        .edit-section h4 {
+            margin-bottom: 10px;
+            color: #007bff;
+            font-size: 16px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 5px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 0;
@@ -485,6 +506,10 @@
                 margin: 10% auto;
                 width: 95%;
                 padding: 20px;
+            }
+
+            .edit-modal-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -721,7 +746,7 @@
         </div>
     </div>
 
-   <!-- Modales -->
+     <!-- Modales -->
     <div id="modalEntrada" class="modal">
         <div class="modal-content">
             <h3>🟢 Fichaje de Entrada</h3>
@@ -810,7 +835,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -823,6 +848,7 @@
         let filteredSessions = [];
         let db = null;
         let firebaseInitialized = false;
+        let editingSessionId = null;
 
         // ============ FIREBASE FUNCTIONS ============
         function initializeFirebase() {
@@ -989,10 +1015,9 @@
             syncStatus.innerHTML = `<div class="${className}">${message}</div>`;
         }
 
-        // Auto-sync cada 10 minutos si Firebase está configurado (reducido de 5min)
+        // Auto-sync cada 10 minutos si Firebase está configurado
         setInterval(() => {
             if (firebaseInitialized) {
-                // Sync silencioso sin mostrar mensaje
                 uploadDataToFirebase().catch(console.error);
             }
         }, 10 * 60 * 1000);
@@ -1052,10 +1077,8 @@
                     document.getElementById('cenaGroup').style.display = 'none';
                     document.getElementById('pernoctaGroup').style.display = 'none';
                 } else if (currentSession.ubicacion === 'taller') {
-                    // Si es taller, ocultar pregunta de pernocta
                     document.getElementById('pernoctaGroup').style.display = 'none';
                 } else {
-                    // Si es cliente, mostrar pregunta de pernocta
                     document.getElementById('pernoctaGroup').style.display = 'block';
                 }
             }
@@ -1065,6 +1088,7 @@
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.style.display = 'none';
             });
+            editingSessionId = null;
         }
 
         function toggleUbicacion() {
@@ -1072,6 +1096,67 @@
             const ubicacionGroup = document.getElementById('ubicacionGroup');
             ubicacionGroup.style.display = tipoServicio === 'nacional' ? 'block' : 'none';
         }
+
+        function toggleEditUbicacion() {
+            const tipoServicio = document.getElementById('editTipoServicio').value;
+            const ubicacionGroup = document.getElementById('editUbicacionGroup');
+            const complementosNacional = document.getElementById('editComplementosNacional');
+            const pernoctaGroup = document.getElementById('editPernoctaGroup');
+            
+            if (tipoServicio === 'nacional') {
+                ubicacionGroup.style.display = 'block';
+                complementosNacional.style.display = 'block';
+                
+                // Mostrar/ocultar pernocta según ubicación
+                const ubicacion = document.getElementById('editUbicacion').value;
+                pernoctaGroup.style.display = ubicacion === 'cliente' ? 'block' : 'none';
+            } else {
+                ubicacionGroup.style.display = 'none';
+                complementosNacional.style.display = 'none';
+            }
+        }
+
+        // Función para editar sesión
+        function editSession(id) {
+            const session = allSessions.find(s => s.id === id);
+            if (!session) return;
+            
+            editingSessionId = id;
+            
+            // Convertir fecha de DD/MM/YYYY a YYYY-MM-DD para input date
+            const dateParts = session.fecha.split('/');
+            const isoDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+            
+            // Llenar formulario con datos actuales
+            document.getElementById('editFecha').value = isoDate;
+            document.getElementById('editTipoServicio').value = session.tipoServicio;
+            document.getElementById('editUbicacion').value = session.ubicacion || 'taller';
+            document.getElementById('editEsFestivo').value = session.esFestivo ? 'si' : 'no';
+            document.getElementById('editEntrada').value = session.entrada;
+            document.getElementById('editSalidaComer').value = session.salidaComer || '';
+            document.getElementById('editVueltaComer').value = session.vueltaComer || '';
+            document.getElementById('editFinJornada').value = session.finJornada;
+            document.getElementById('editSeHaComido').value = session.seHaComido || 'no';
+            document.getElementById('editSeHaCenado').value = session.seHaCenado || 'no';
+            document.getElementById('editHayPernocta').value = session.hayPernocta || 'no';
+            
+            // Configurar visibilidad de campos
+            toggleEditUbicacion();
+            
+            // Mostrar modal
+            document.getElementById('modalEdit').style.display = 'block';
+        }
+
+        // Event listener para cambio de ubicación en edición
+        document.addEventListener('DOMContentLoaded', function() {
+            const editUbicacion = document.getElementById('editUbicacion');
+            if (editUbicacion) {
+                editUbicacion.addEventListener('change', function() {
+                    const pernoctaGroup = document.getElementById('editPernoctaGroup');
+                    pernoctaGroup.style.display = this.value === 'cliente' ? 'block' : 'none';
+                });
+            }
+        });
 
         // Funciones de fichaje
         function updateButtonsState() {
@@ -1125,7 +1210,81 @@
                 e.preventDefault();
                 ficharFinJornada();
             });
+
+            document.getElementById('formEdit').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveEditedSession();
+            });
         });
+
+        function saveEditedSession() {
+            if (!editingSessionId) return;
+            
+            const sessionIndex = allSessions.findIndex(s => s.id === editingSessionId);
+            if (sessionIndex === -1) return;
+            
+            // Obtener datos del formulario
+            const fecha = document.getElementById('editFecha').value;
+            const tipoServicio = document.getElementById('editTipoServicio').value;
+            const ubicacion = tipoServicio === 'nacional' ? document.getElementById('editUbicacion').value : null;
+            const esFestivo = document.getElementById('editEsFestivo').value === 'si';
+            const entrada = document.getElementById('editEntrada').value;
+            const salidaComer = document.getElementById('editSalidaComer').value || null;
+            const vueltaComer = document.getElementById('editVueltaComer').value || null;
+            const finJornada = document.getElementById('editFinJornada').value;
+            const seHaComido = tipoServicio === 'nacional' ? document.getElementById('editSeHaComido').value : 'no';
+            const seHaCenado = tipoServicio === 'nacional' ? document.getElementById('editSeHaCenado').value : 'no';
+            const hayPernocta = (tipoServicio === 'nacional' && ubicacion === 'cliente') ? 
+                document.getElementById('editHayPernocta').value : 'no';
+            
+            // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY
+            const dateObj = new Date(fecha);
+            const formattedDate = formatDate(dateObj);
+            
+            // Crear sesión temporal para calcular horas
+            const tempSession = {
+                fecha: formattedDate,
+                tipoServicio: tipoServicio,
+                ubicacion: ubicacion,
+                esFestivo: esFestivo,
+                entrada: entrada,
+                salidaComer: salidaComer,
+                vueltaComer: vueltaComer,
+                finJornada: finJornada,
+                seHaComido: seHaComido,
+                seHaCenado: seHaCenado,
+                hayPernocta: hayPernocta,
+                dia: getDayType(dateObj, esFestivo),
+                horasTrabajadas: 0,
+                horasExtra: 0,
+                horasNocturnas: 0,
+                importeTotal: 0
+            };
+            
+            // Calcular horas y importes
+            currentSession = tempSession;
+            calculateHours();
+            calculateAmount();
+            
+            // Actualizar la sesión en el array
+            allSessions[sessionIndex] = { ...currentSession, id: editingSessionId };
+            currentSession = null;
+            
+            // Guardar y actualizar interfaz
+            saveSessions();
+            updateRegistroTable();
+            updateSummary();
+            closeModal();
+            
+            showSyncStatus('✅ Registro editado correctamente', 'sync-success');
+            setTimeout(() => {
+                document.getElementById('syncStatus').innerHTML = '';
+            }, 2000);
+            
+            if (firebaseInitialized) {
+                syncWithFirebase();
+            }
+        }
 
         function ficharEntrada() {
             const now = new Date();
@@ -1157,7 +1316,6 @@
             updateButtonsState();
             closeModal();
             
-            // Sync con Firebase si está disponible
             if (firebaseInitialized) {
                 syncWithFirebase();
             }
@@ -1196,7 +1354,6 @@
             const now = new Date();
             const seHaCenado = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaCenado').value : 'no';
             
-            // Solo preguntar por pernocta si es nacional Y cliente
             let hayPernocta = 'no';
             if (currentSession.tipoServicio === 'nacional' && currentSession.ubicacion === 'cliente') {
                 hayPernocta = document.getElementById('hayPernocta').value;
@@ -1206,11 +1363,9 @@
             currentSession.seHaCenado = seHaCenado;
             currentSession.hayPernocta = hayPernocta;
             
-            // Calcular horas trabajadas y extras
             calculateHours();
             calculateAmount();
             
-            // Guardar sesión completa
             allSessions.push(currentSession);
             currentSession = null;
             
@@ -1228,7 +1383,6 @@
             const day = date.getDay();
             const hour = date.getHours();
             
-            // Si es festivo, siempre es S-D-F independientemente del día de la semana
             if (esFestivo) return 'S-D-F';
             
             if (day >= 1 && day <= 5) return 'L-V';
@@ -1246,7 +1400,6 @@
             const [hours, minutes] = timeStr.split(':');
             const parsedTime = new Date(referenceTime.getFullYear(), referenceTime.getMonth(), referenceTime.getDate(), parseInt(hours), parseInt(minutes));
             
-            // Si la hora es menor que la hora de referencia, asumimos que es del día siguiente
             if (parsedTime < referenceTime) {
                 parsedTime.setDate(parsedTime.getDate() + 1);
             }
@@ -1260,7 +1413,6 @@
             let vueltaComer = null;
             let finJornada = null;
             
-            // Calcular tiempos relativos a la entrada para manejar cruce de medianoche
             if (currentSession.salidaComer) {
                 salidaComer = parseTimeForCalculation(currentSession.salidaComer, entrada);
             }
@@ -1272,20 +1424,17 @@
             let horasTrabajadas = 0;
             let horasNocturnas = 0;
             
-            // Calcular horas de la mañana (hasta salida a comer)
             if (salidaComer) {
                 const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
                 horasTrabajadas += horasManana;
                 horasNocturnas += calculateNightHours(entrada, salidaComer);
             }
             
-            // Calcular horas de la tarde (desde vuelta de comer hasta fin)
             if (vueltaComer) {
                 const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
                 horasTrabajadas += horasTarde;
                 horasNocturnas += calculateNightHours(vueltaComer, finJornada);
             } else if (!salidaComer) {
-                // Jornada sin pausa para comer (continua)
                 const horasTotal = (finJornada - entrada) / (1000 * 60 * 60);
                 horasTrabajadas += horasTotal;
                 horasNocturnas += calculateNightHours(entrada, finJornada);
@@ -1294,7 +1443,6 @@
             currentSession.horasTrabajadas = Math.round(horasTrabajadas * 100) / 100;
             currentSession.horasNocturnas = Math.round(horasNocturnas * 100) / 100;
             
-            // Calcular horas extra según las reglas
             calculateExtraHours();
         }
 
@@ -1317,15 +1465,13 @@
                 let isNight = false;
                 
                 if (nightStartInMin > nightEndInMin) {
-                    // Horario nocturno cruza medianoche (ej: 22:00 - 06:00)
                     isNight = currentTimeInMin >= nightStartInMin || currentTimeInMin < nightEndInMin;
                 } else {
-                    // Horario nocturno no cruza medianoche
                     isNight = currentTimeInMin >= nightStartInMin && currentTimeInMin < nightEndInMin;
                 }
                 
                 if (isNight) {
-                    nightHours += 1/60; // 1 minuto
+                    nightHours += 1/60;
                 }
                 current.setMinutes(current.getMinutes() + 1);
             }
@@ -1340,11 +1486,11 @@
             
             if (currentSession.tipoServicio === 'nacional') {
                 if (dia === 'L-V') {
-                    horasExtra = Math.max(0, horasTrabajadas - 8.25); // 8h 15min
+                    horasExtra = Math.max(0, horasTrabajadas - 8.25);
                 } else {
-                    horasExtra = horasTrabajadas; // Sábados, domingos y festivos
+                    horasExtra = horasTrabajadas;
                 }
-            } else { // Internacional
+            } else {
                 if (dia === 'L-V') {
                     horasExtra = Math.max(0, horasTrabajadas - 8.25);
                 } else {
@@ -1359,7 +1505,6 @@
             let total = 0;
             
             if (currentSession.tipoServicio === 'nacional') {
-                // Complementos de comida y cena
                 if (currentSession.seHaComido === 'si') {
                     total += parseFloat(config.precioComida || 13);
                 }
@@ -1367,7 +1512,6 @@
                     total += parseFloat(config.precioCena || 15);
                 }
                 
-                // Complementos de pernocta - SOLO para ubicación CLIENTE
                 if (currentSession.ubicacion === 'cliente') {
                     if (currentSession.hayPernocta === 'si') {
                         if (currentSession.dia === 'L-V') {
@@ -1384,50 +1528,41 @@
                     }
                 }
                 
-                // Horas extra - Separar normales de nocturnas/festivas
                 if (currentSession.horasExtra > 0) {
                     let tarifaExtraNormal;
                     let tarifaExtraEspecial;
                     
                     if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
-                        // Sábado tarde, domingo o festivo - todas las horas son especiales
                         tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
                         total += currentSession.horasExtra * tarifaExtraEspecial;
                     } else {
-                        // Día L-V - separar horas extra normales de nocturnas
                         if (currentSession.ubicacion === 'taller') {
                             tarifaExtraNormal = parseFloat(config.extraTaller || 22.23);
                         } else {
                             tarifaExtraNormal = parseFloat(config.extraCliente || 23.82);
                         }
                         
-                        // Calcular cuántas de las horas extra son nocturnas
                         const horasExtraNocturnas = Math.min(currentSession.horasNocturnas, currentSession.horasExtra);
                         const horasExtraNormales = currentSession.horasExtra - horasExtraNocturnas;
                         
-                        // Aplicar tarifas
                         total += horasExtraNormales * tarifaExtraNormal;
                         
-                        // Las horas nocturnas tienen tarifa especial
                         tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
                         total += horasExtraNocturnas * tarifaExtraEspecial;
                         
-                        // Guardar el desglose para el resumen
                         currentSession.horasExtraNormales = horasExtraNormales;
                         currentSession.horasExtraNocturnas = horasExtraNocturnas;
                         currentSession.importeExtraNormales = horasExtraNormales * tarifaExtraNormal;
                         currentSession.importeExtraNocturnas = horasExtraNocturnas * tarifaExtraEspecial;
                     }
                 }
-            } else { // Internacional
-                // Dieta automática
+            } else {
                 if (currentSession.dia === 'L-V') {
                     total += parseFloat(config.dietaInternacionalLV || 26);
                 } else {
                     total += parseFloat(config.dietaInternacionalSDF || 30);
                 }
                 
-                // Horas extra internacionales
                 if (currentSession.horasExtra > 0) {
                     let tarifaExtra;
                     if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
@@ -1442,7 +1577,7 @@
             currentSession.importeTotal = Math.round(total * 100) / 100;
         }
 
-        // Funciones de almacenamiento local (mantenidas como backup)
+        // Funciones de almacenamiento local
         function saveCurrentSession() {
             localStorage.setItem('currentSession', JSON.stringify(currentSession));
         }
@@ -1484,13 +1619,11 @@
             
             localStorage.setItem('config', JSON.stringify(config));
             
-            // Mostrar mensaje de confirmación sin alert
             showSyncStatus('✅ Configuración guardada', 'sync-success');
             setTimeout(() => {
                 document.getElementById('syncStatus').innerHTML = '';
             }, 2000);
             
-            // Sync con Firebase si está disponible (sin bloquear UI)
             if (firebaseInitialized) {
                 setTimeout(() => {
                     syncWithFirebase();
@@ -1503,7 +1636,6 @@
             if (stored) {
                 config = JSON.parse(stored);
                 
-                // Cargar valores en los campos
                 Object.keys(config).forEach(key => {
                     const element = document.getElementById(key);
                     if (element) {
@@ -1511,7 +1643,6 @@
                     }
                 });
             } else {
-                // Configuración por defecto
                 config = {
                     horaInicioNocturno: '22:00',
                     horaFinNocturno: '06:00',
@@ -1546,7 +1677,6 @@
             const totalExtras = monthSessions.reduce((sum, session) => sum + session.horasExtra, 0);
             const totalImporte = monthSessions.reduce((sum, session) => sum + session.importeTotal, 0);
             
-            // Calcular desglose de importes
             let totalComplementos = 0;
             let totalHorasExtrasNormales = 0;
             let totalHorasExtrasEspeciales = 0;
@@ -1555,7 +1685,6 @@
             
             monthSessions.forEach(session => {
                 if (session.tipoServicio === 'nacional') {
-                    // Complementos
                     if (session.seHaComido === 'si') {
                         totalComplementos += parseFloat(config.precioComida || 13);
                     }
@@ -1563,7 +1692,6 @@
                         totalComplementos += parseFloat(config.precioCena || 15);
                     }
                     
-                    // Pernocta solo para cliente
                     if (session.ubicacion === 'cliente') {
                         if (session.hayPernocta === 'si') {
                             if (session.dia === 'L-V') {
@@ -1580,14 +1708,11 @@
                         }
                     }
                     
-                    // Horas extra
                     if (session.horasExtra > 0) {
                         if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
-                            // Todas las horas son especiales
                             totalHorasExtrasEspeciales += session.horasExtra;
                             importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
                         } else {
-                            // Separar normales de nocturnas
                             const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
                             const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
                             
@@ -1605,15 +1730,13 @@
                             importeExtrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
                         }
                     }
-                } else { // Internacional
-                    // Dieta automática
+                } else {
                     if (session.dia === 'L-V') {
                         totalComplementos += parseFloat(config.dietaInternacionalLV || 26);
                     } else {
                         totalComplementos += parseFloat(config.dietaInternacionalSDF || 30);
                     }
                     
-                    // Horas extra internacionales
                     if (session.horasExtra > 0) {
                         if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
                             totalHorasExtrasEspeciales += session.horasExtra;
@@ -1671,12 +1794,10 @@
             const tbody = document.getElementById('registroBody');
             tbody.innerHTML = '';
             
-            // Usar datos filtrados si existen, sino todos los datos
             const sessionsToShow = filteredSessions.length > 0 || document.getElementById('filtroTipo')?.value !== 'todos' 
                 ? filteredSessions 
                 : allSessions;
             
-            // Ordenar por fecha descendente
             const sortedSessions = [...sessionsToShow].sort((a, b) => {
                 const dateA = new Date(a.fecha.split('/').reverse().join('-'));
                 const dateB = new Date(b.fecha.split('/').reverse().join('-'));
@@ -1695,7 +1816,6 @@
             }
             
             sortedSessions.forEach((session, index) => {
-                // Fila principal
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>
@@ -1718,7 +1838,6 @@
                 `;
                 tbody.appendChild(row);
                 
-                // Fila de detalles
                 const detailRow = document.createElement('tr');
                 detailRow.className = 'detail-row';
                 detailRow.id = `detailRow${index}`;
@@ -1785,7 +1904,6 @@
             const fechaDesde = document.getElementById('fechaDesde').value;
             const fechaHasta = document.getElementById('fechaHasta').value;
             
-            // Mostrar/ocultar rango personalizado
             const rangoPersonalizado = document.getElementById('rangoPersonalizado');
             if (filtroTipo === 'personalizado') {
                 rangoPersonalizado.style.display = 'flex';
@@ -1793,7 +1911,6 @@
                 rangoPersonalizado.style.display = 'none';
             }
             
-            // Filtrar datos
             filteredSessions = allSessions.filter(session => {
                 const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
                 const today = new Date();
@@ -1877,10 +1994,6 @@
             }
         }
 
-        function editSession(id) {
-            // ... (función de edición - mantenida igual)
-        }
-
         function deleteSession(id) {
             if (confirm('¿Estás seguro de que quieres eliminar este fichaje?')) {
                 allSessions = allSessions.filter(s => s.id !== id);
@@ -1905,7 +2018,6 @@
                     document.getElementById('syncStatus').innerHTML = '';
                 }, 2000);
                 
-                // Sync con Firebase si está disponible
                 if (firebaseInitialized) {
                     syncWithFirebase();
                 }
@@ -1946,12 +2058,10 @@
                         config = data.config || config;
                         currentSession = data.currentSession || null;
                         
-                        // Guardar datos importados
                         saveSessions();
                         saveConfig();
                         if (currentSession) saveCurrentSession();
                         
-                        // Actualizar interfaz
                         loadConfig();
                         updateRegistroTable();
                         updateSummary();
@@ -1969,7 +2079,6 @@
             };
             reader.readAsText(file);
             
-            // Limpiar el input
             event.target.value = '';
         }
 
@@ -1985,7 +2094,6 @@
             updateContadorResultados();
             setInterval(updateClock, 1000);
             
-            // Intentar conectar Firebase automáticamente
             initializeFirebase();
         });
 
