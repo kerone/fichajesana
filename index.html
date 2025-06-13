@@ -563,7 +563,7 @@
                 <button class="btn btn-primary" onclick="exportData()">📤 Exportar Datos</button>
                 <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importar Datos</button>
                 <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(event)">
-                <button class="btn btn-primary" onclick="syncWithFirebase()">🔄 Sincronizar</button>
+                <button class="btn btn-primary" onclick="manualSync()">🔄 Sincronizar</button>
                 <button class="btn" onclick="resetCurrentSession()" style="background: #dc3545; color: white;">🔄 Reset Sesión</button>
             </div>
 
@@ -904,7 +904,7 @@
             if (initializeFirebase()) {
                 showSyncStatus('✅ Firebase configurado correctamente', 'sync-success');
                 setTimeout(() => {
-                    syncWithFirebase();
+                    manualSync();
                 }, 1000);
             } else {
                 showSyncStatus('❌ Error al conectar con Firebase. Verifica la configuración.', 'sync-error');
@@ -934,7 +934,7 @@
             statusElement.className = `firebase-status ${className}`;
         }
 
-        async function syncWithFirebase() {
+        async function manualSync() {
             if (!initializeFirebase()) {
                 showSyncStatus('❌ Firebase no disponible', 'sync-error');
                 setTimeout(() => {
@@ -1282,7 +1282,7 @@
             }, 2000);
             
             if (firebaseInitialized) {
-                syncWithFirebase();
+                manualSync();
             }
         }
 
@@ -1317,7 +1317,7 @@
             closeModal();
             
             if (firebaseInitialized) {
-                syncWithFirebase();
+                manualSync();
             }
         }
 
@@ -1333,7 +1333,7 @@
             closeModal();
             
             if (firebaseInitialized) {
-                syncWithFirebase();
+                manualSync();
             }
         }
 
@@ -1346,7 +1346,7 @@
             closeModal();
             
             if (firebaseInitialized) {
-                syncWithFirebase();
+                manualSync();
             }
         }
 
@@ -1375,7 +1375,7 @@
             closeModal();
             
             if (firebaseInitialized) {
-                syncWithFirebase();
+                manualSync();
             }
         }
 
@@ -1626,7 +1626,7 @@
             
             if (firebaseInitialized) {
                 setTimeout(() => {
-                    syncWithFirebase();
+                    manualSync();
                 }, 500);
             }
         }
@@ -2002,7 +2002,7 @@
                 updateSummary();
                 
                 if (firebaseInitialized) {
-                    syncWithFirebase();
+                    manualSync();
                 }
             }
         }
@@ -2019,7 +2019,7 @@
                 }, 2000);
                 
                 if (firebaseInitialized) {
-                    syncWithFirebase();
+                    manualSync();
                 }
             }
         }
@@ -2070,7 +2070,7 @@
                         alert('Datos importados correctamente');
                         
                         if (firebaseInitialized) {
-                            syncWithFirebase();
+                            manualSync();
                         }
                     }
                 } catch (error) {
