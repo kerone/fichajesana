@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="icon" type="image/png" href="/icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Fichaje</title>
@@ -489,37 +488,37 @@
                 <button class="btn btn-primary" onclick="exportData()">📤 Exportar Datos</button>
                 <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importar Datos</button>
                 <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(event)">
-            </div>
-
-            <div class="filter-section" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px; border: 2px solid #e9ecef;">
-                <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                    <label style="font-weight: 600; color: #333;">🔍 Filtrar por:</label>
-                    <select id="filtroTipo" onchange="applyFilters()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 5px; font-size: 14px;">
-                        <option value="todos">Todos los días</option>
-                        <option value="ultimo-mes">Último mes</option>
-                        <option value="mes-actual">Mes actual</option>
-                        <option value="ultimos-7">Últimos 7 días</option>
-                        <option value="ultimos-30">Últimos 30 días</option>
-                        <option value="L-V">Solo L-V (Laborables)</option>
-                        <option value="S-D-F">Solo S-D-F (Fines de semana)</option>
-                        <option value="festivos">Solo Festivos</option>
-                        <option value="nacional">Solo Nacional</option>
-                        <option value="internacional">Solo Internacional</option>
-                        <option value="taller">Solo Taller</option>
-                        <option value="cliente">Solo Cliente</option>
-                        <option value="personalizado">Rango personalizado</option>
-                    </select>
-                    
-                    <div id="rangoPersonalizado" style="display: none; gap: 10px; align-items: center;">
-                        <label style="font-size: 14px; color: #666;">Desde:</label>
-                        <input type="date" id="fechaDesde" onchange="applyFilters()" style="padding: 6px; border: 2px solid #e9ecef; border-radius: 5px;">
-                        <label style="font-size: 14px; color: #666;">Hasta:</label>
-                        <input type="date" id="fechaHasta" onchange="applyFilters()" style="padding: 6px; border: 2px solid #e9ecef; border-radius: 5px;">
+                
+                <div style="margin-left: auto; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="fechaInicio" style="font-weight: 500; color: #555; white-space: nowrap;">Desde:</label>
+                        <input type="date" id="fechaInicio" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
                     </div>
                     
-                    <button onclick="resetFilters()" class="btn btn-secondary" style="padding: 8px 16px; font-size: 14px;">🔄 Limpiar</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="fechaFin" style="font-weight: 500; color: #555; white-space: nowrap;">Hasta:</label>
+                        <input type="date" id="fechaFin" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                    </div>
                     
-                    <span id="contadorResultados" style="margin-left: auto; font-weight: 500; color: #666; font-size: 14px;"></span>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="filtroTipo" style="font-weight: 500; color: #555; white-space: nowrap;">Tipo:</label>
+                        <select id="filtroTipo" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                            <option value="todos">Todos</option>
+                            <option value="L-V">L-V</option>
+                            <option value="sabado-manana">Sáb Mañana</option>
+                            <option value="sabado-tarde">Sáb Tarde</option>
+                            <option value="S-D-F">Domingo</option>
+                            <option value="festivo">Festivos</option>
+                            <option value="nacional">Nacional</option>
+                            <option value="internacional">Internacional</option>
+                            <option value="taller">Taller</option>
+                            <option value="cliente">Cliente</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="limpiarFiltros()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; white-space: nowrap;">
+                        🔄 Limpiar
+                    </button>
                 </div>
             </div>
             
@@ -673,10 +672,10 @@
             <h3>🍽️ Salida para Comer</h3>
             <form id="formSalidaComer">
                 <div class="form-group" id="comidaGroup">
-                    <label>¿Comida?</label>
+                    <label>¿Se ha comido?</label>
                     <select id="seHaComido">
-                        <option value="no">No</option>
                         <option value="si">Sí</option>
+                        <option value="no">No</option>
                     </select>
                 </div>
                 <div class="modal-buttons">
@@ -703,17 +702,17 @@
             <h3>🌙 Fin de Jornada</h3>
             <form id="formFinJornada">
                 <div class="form-group" id="cenaGroup">
-                    <label>¿Cena?</label>
+                    <label>¿Se ha cenado?</label>
                     <select id="seHaCenado">
-                        <option value="no">No</option>
                         <option value="si">Sí</option>
+                        <option value="no">No</option>
                     </select>
                 </div>
                 <div class="form-group" id="pernoctaGroup">
                     <label>¿Hay pernocta?</label>
                     <select id="hayPernocta">
-                        <option value="no">No</option>
                         <option value="si">Sí</option>
+                        <option value="no">No</option>
                     </select>
                 </div>
                 <div class="modal-buttons">
@@ -737,9 +736,7 @@
             updateClock();
             updateButtonsState();
             updateSummary();
-            filteredSessions = [...allSessions]; // Inicializar filtros
             updateRegistroTable();
-            updateContadorResultados();
             setInterval(updateClock, 1000);
         });
 
@@ -1381,30 +1378,44 @@
             const tbody = document.getElementById('registroBody');
             tbody.innerHTML = '';
             
-            // Usar datos filtrados si existen, sino todos los datos
-            const sessionsToShow = filteredSessions.length > 0 || document.getElementById('filtroTipo')?.value !== 'todos' 
-                ? filteredSessions 
-                : allSessions;
+            const filtro = document.getElementById('filtroTipo').value;
             
             // Ordenar por fecha descendente
-            const sortedSessions = [...sessionsToShow].sort((a, b) => {
+            const sortedSessions = [...allSessions].sort((a, b) => {
                 const dateA = new Date(a.fecha.split('/').reverse().join('-'));
                 const dateB = new Date(b.fecha.split('/').reverse().join('-'));
                 return dateB - dateA;
             });
             
-            if (sortedSessions.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="10" style="text-align: center; padding: 40px; color: #666; font-style: italic;">
-                            📭 No hay registros que coincidan con el filtro seleccionado
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
+            // Filtrar sesiones
+            const filteredSessions = sortedSessions.filter(session => {
+                switch(filtro) {
+                    case 'todos':
+                        return true;
+                    case 'L-V':
+                        return session.dia === 'L-V' && !session.esFestivo;
+                    case 'sabado-manana':
+                        return session.dia === 'sabado-manana';
+                    case 'sabado-tarde':
+                        return session.dia === 'sabado-tarde';
+                    case 'S-D-F':
+                        return session.dia === 'S-D-F' && !session.esFestivo;
+                    case 'festivo':
+                        return session.esFestivo;
+                    case 'nacional':
+                        return session.tipoServicio === 'nacional';
+                    case 'internacional':
+                        return session.tipoServicio === 'internacional';
+                    case 'taller':
+                        return session.ubicacion === 'taller';
+                    case 'cliente':
+                        return session.ubicacion === 'cliente';
+                    default:
+                        return true;
+                }
+            });
             
-            sortedSessions.forEach((session, index) => {
+            filteredSessions.forEach((session, index) => {
                 // Fila principal
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1453,11 +1464,11 @@
                                     <span class="detail-value">${session.dia}</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">Comida:</span>
+                                    <span class="detail-label">¿Ha Comido?:</span>
                                     <span class="detail-value">${session.seHaComido === 'si' ? '✅ Sí' : '❌ No'}</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">Cena:</span>
+                                    <span class="detail-label">¿Ha Cenado?:</span>
                                     <span class="detail-value">${session.seHaCenado === 'si' ? '✅ Sí' : '❌ No'}</span>
                                 </div>
                                 <div class="detail-item">
@@ -1474,6 +1485,17 @@
                 `;
                 tbody.appendChild(detailRow);
             });
+            
+            // Mostrar mensaje si no hay resultados
+            if (filteredSessions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="10" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                        No hay registros que coincidan con el filtro seleccionado
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
         }
 
         function toggleDetails(index) {
@@ -1486,107 +1508,6 @@
             } else {
                 detailRow.style.display = 'none';
                 expandBtn.textContent = '▶️';
-            }
-        }
-
-        // Variable para almacenar datos filtrados
-        let filteredSessions = [];
-
-        // Funciones de filtrado
-        function applyFilters() {
-            const filtroTipo = document.getElementById('filtroTipo').value;
-            const fechaDesde = document.getElementById('fechaDesde').value;
-            const fechaHasta = document.getElementById('fechaHasta').value;
-            
-            // Mostrar/ocultar rango personalizado
-            const rangoPersonalizado = document.getElementById('rangoPersonalizado');
-            if (filtroTipo === 'personalizado') {
-                rangoPersonalizado.style.display = 'flex';
-            } else {
-                rangoPersonalizado.style.display = 'none';
-            }
-            
-            // Filtrar datos
-            filteredSessions = allSessions.filter(session => {
-                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
-                const today = new Date();
-                
-                switch (filtroTipo) {
-                    case 'todos':
-                        return true;
-                        
-                    case 'ultimo-mes':
-                        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                        const endLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-                        return sessionDate >= lastMonth && sessionDate <= endLastMonth;
-                        
-                    case 'mes-actual':
-                        const startCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                        return sessionDate >= startCurrentMonth;
-                        
-                    case 'ultimos-7':
-                        const last7Days = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-                        return sessionDate >= last7Days;
-                        
-                    case 'ultimos-30':
-                        const last30Days = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-                        return sessionDate >= last30Days;
-                        
-                    case 'L-V':
-                        return session.dia === 'L-V' && !session.esFestivo;
-                        
-                    case 'S-D-F':
-                        return session.dia === 'S-D-F' || session.dia === 'sabado-manana' || session.dia === 'sabado-tarde';
-                        
-                    case 'festivos':
-                        return session.esFestivo;
-                        
-                    case 'nacional':
-                        return session.tipoServicio === 'nacional';
-                        
-                    case 'internacional':
-                        return session.tipoServicio === 'internacional';
-                        
-                    case 'taller':
-                        return session.ubicacion === 'taller';
-                        
-                    case 'cliente':
-                        return session.ubicacion === 'cliente';
-                        
-                    case 'personalizado':
-                        if (!fechaDesde || !fechaHasta) return true;
-                        const desde = new Date(fechaDesde);
-                        const hasta = new Date(fechaHasta);
-                        return sessionDate >= desde && sessionDate <= hasta;
-                        
-                    default:
-                        return true;
-                }
-            });
-            
-            updateRegistroTable();
-            updateContadorResultados();
-        }
-
-        function resetFilters() {
-            document.getElementById('filtroTipo').value = 'todos';
-            document.getElementById('fechaDesde').value = '';
-            document.getElementById('fechaHasta').value = '';
-            document.getElementById('rangoPersonalizado').style.display = 'none';
-            filteredSessions = [...allSessions];
-            updateRegistroTable();
-            updateContadorResultados();
-        }
-
-        function updateContadorResultados() {
-            const contador = document.getElementById('contadorResultados');
-            const total = allSessions.length;
-            const filtrados = filteredSessions.length;
-            
-            if (filtrados === total) {
-                contador.textContent = `${total} registro${total !== 1 ? 's' : ''}`;
-            } else {
-                contador.textContent = `${filtrados} de ${total} registro${total !== 1 ? 's' : ''}`;
             }
         }
 
@@ -1637,17 +1558,17 @@
                             <input type="time" id="editFinJornada" value="${session.finJornada}" required>
                         </div>
                         <div class="form-group" id="editComidaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
-                            <label>¿Comida?</label>
+                            <label>¿Se ha comido?</label>
                             <select id="editSeHaComido">
-                                <option value="no" ${session.seHaComido === 'no' ? 'selected' : ''}>No</option>
                                 <option value="si" ${session.seHaComido === 'si' ? 'selected' : ''}>Sí</option>
+                                <option value="no" ${session.seHaComido === 'no' ? 'selected' : ''}>No</option>
                             </select>
                         </div>
                         <div class="form-group" id="editCenaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
-                            <label>¿Cena?</label>
+                            <label>¿Se ha cenado?</label>
                             <select id="editSeHaCenado">
-                                <option value="no" ${session.seHaCenado === 'no' ? 'selected' : ''}>No</option>
                                 <option value="si" ${session.seHaCenado === 'si' ? 'selected' : ''}>Sí</option>
+                                <option value="no" ${session.seHaCenado === 'no' ? 'selected' : ''}>No</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1660,8 +1581,8 @@
                         <div class="form-group" id="editPernoctaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
                             <label>¿Hay pernocta?</label>
                             <select id="editHayPernocta">
-                                <option value="no" ${session.hayPernocta === 'no' ? 'selected' : ''}>No</option>
                                 <option value="si" ${session.hayPernocta === 'si' ? 'selected' : ''}>Sí</option>
+                                <option value="no" ${session.hayPernocta === 'no' ? 'selected' : ''}>No</option>
                             </select>
                         </div>
                         <div class="modal-buttons">
