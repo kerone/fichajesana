@@ -602,6 +602,14 @@
                         <label>Dieta S-D-F (€)</label>
                         <input type="number" id="dietaInternacionalSDF" value="30" step="0.01">
                     </div>
+                    <div class="form-group">
+                        <label>Pernocta Internacional L-V (€)</label>
+                        <input type="number" id="pernoctaInternacionalLV" value="20" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Pernocta Internacional S-D-F (€)</label>
+                        <input type="number" id="pernoctaInternacionalSDF" value="25" step="0.01">
+                    </div>
                 </div>
             </div>
 
@@ -659,6 +667,14 @@
                         <option value="si">Sí</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Tipo de Entrada</label>
+                    <select id="tipoEntrada">
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                        <option value="puntual">Puntual (sin redondeo)</option>
+                    </select>
+                </div>
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Fichar Entrada</button>
@@ -672,10 +688,10 @@
             <h3>🍽️ Salida para Comer</h3>
             <form id="formSalidaComer">
                 <div class="form-group" id="comidaGroup">
-                    <label>¿Se ha comido?</label>
+                    <label>¿Comida fuera?</label>
                     <select id="seHaComido">
-                        <option value="si">Sí</option>
                         <option value="no">No</option>
+                        <option value="si">Sí</option>
                     </select>
                 </div>
                 <div class="modal-buttons">
@@ -702,17 +718,25 @@
             <h3>🌙 Fin de Jornada</h3>
             <form id="formFinJornada">
                 <div class="form-group" id="cenaGroup">
-                    <label>¿Se ha cenado?</label>
+                    <label>¿Cena fuera?</label>
                     <select id="seHaCenado">
-                        <option value="si">Sí</option>
                         <option value="no">No</option>
+                        <option value="si">Sí</option>
                     </select>
                 </div>
                 <div class="form-group" id="pernoctaGroup">
                     <label>¿Hay pernocta?</label>
                     <select id="hayPernocta">
-                        <option value="si">Sí</option>
                         <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Fin de Jornada</label>
+                    <select id="tipoFinJornada">
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                        <option value="puntual">Puntual (sin redondeo)</option>
                     </select>
                 </div>
                 <div class="modal-buttons">
@@ -781,20 +805,35 @@
             modal.style.display = 'block';
             
             // Configurar visibilidad de campos según el tipo de servicio actual
-            if (tipo === 'salidaComer' && currentSession && currentSession.tipoServicio === 'internacional') {
-                document.getElementById('comidaGroup').style.display = 'none';
+            if (tipo === 'salidaComer') {
+                // Resetear visibilidad por defecto
+                document.getElementById('comidaGroup').style.display = 'block';
+                
+                // Ocultar solo si es internacional
+                if (currentSession && currentSession.tipoServicio === 'internacional') {
+                    document.getElementById('comidaGroup').style.display = 'none';
+                }
             }
             
-            if (tipo === 'finJornada' && currentSession) {
-                if (currentSession.tipoServicio === 'internacional') {
-                    document.getElementById('cenaGroup').style.display = 'none';
-                    document.getElementById('pernoctaGroup').style.display = 'none';
-                } else if (currentSession.ubicacion === 'taller') {
-                    // Si es taller, ocultar pregunta de pernocta
-                    document.getElementById('pernoctaGroup').style.display = 'none';
-                } else {
-                    // Si es cliente, mostrar pregunta de pernocta
-                    document.getElementById('pernoctaGroup').style.display = 'block';
+            if (tipo === 'finJornada') {
+                // Resetear visibilidad por defecto
+                document.getElementById('cenaGroup').style.display = 'block';
+                document.getElementById('pernoctaGroup').style.display = 'block';
+                
+                if (currentSession) {
+                    if (currentSession.tipoServicio === 'internacional') {
+                        // Para internacional: no preguntar por cena (dieta incluye todo), pero SÍ preguntar por pernocta
+                        document.getElementById('cenaGroup').style.display = 'none';
+                        document.getElementById('pernoctaGroup').style.display = 'block';
+                    } else if (currentSession.ubicacion === 'taller') {
+                        // Si es taller nacional, mostrar cena pero NO pernocta
+                        document.getElementById('cenaGroup').style.display = 'block';
+                        document.getElementById('pernoctaGroup').style.display = 'none';
+                    } else {
+                        // Si es cliente nacional, mostrar ambas preguntas
+                        document.getElementById('cenaGroup').style.display = 'block';
+                        document.getElementById('pernoctaGroup').style.display = 'block';
+                    }
                 }
             }
         }
@@ -868,6 +907,13 @@
             const tipoServicio = document.getElementById('tipoServicio').value;
             const ubicacion = tipoServicio === 'nacional' ? document.getElementById('ubicacion').value : null;
             const esFestivo = document.getElementById('esFestivo').value === 'si';
+            const tipoEntrada = document.getElementById('tipoEntrada').value;
+            
+            // Calcular la hora de entrada con redondeo si es necesario
+            let horaEntrada = now;
+            if (tipoEntrada !== 'puntual') {
+                horaEntrada = redondearHoraPorCuartos(now, tipoEntrada);
+            }
             
             currentSession = {
                 id: Date.now(),
@@ -875,7 +921,9 @@
                 tipoServicio: tipoServicio,
                 ubicacion: ubicacion,
                 esFestivo: esFestivo,
-                entrada: formatTime(now),
+                entrada: formatTime(horaEntrada),
+                entradaOriginal: formatTime(now), // Guardamos la hora original
+                tipoEntrada: tipoEntrada,
                 salidaComer: null,
                 vueltaComer: null,
                 finJornada: null,
@@ -917,15 +965,31 @@
 
         function ficharFinJornada() {
             const now = new Date();
-            const seHaCenado = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaCenado').value : 'no';
-            
-            // Solo preguntar por pernocta si es nacional Y cliente
+            const tipoFinJornada = document.getElementById('tipoFinJornada').value;
+            let seHaCenado = 'no';
             let hayPernocta = 'no';
-            if (currentSession.tipoServicio === 'nacional' && currentSession.ubicacion === 'cliente') {
+            
+            if (currentSession.tipoServicio === 'nacional') {
+                seHaCenado = document.getElementById('seHaCenado').value;
+                // Solo preguntar por pernocta si es nacional Y cliente
+                if (currentSession.ubicacion === 'cliente') {
+                    hayPernocta = document.getElementById('hayPernocta').value;
+                }
+            } else {
+                // Para internacional: no hay pregunta de cena (dieta incluye todo), pero SÍ hay pernocta
+                seHaCenado = 'no'; // La dieta internacional incluye todas las comidas
                 hayPernocta = document.getElementById('hayPernocta').value;
             }
             
-            currentSession.finJornada = formatTime(now);
+            // Calcular la hora de fin con redondeo si es necesario
+            let horaFin = now;
+            if (tipoFinJornada !== 'puntual') {
+                horaFin = redondearHoraPorCuartos(now, tipoFinJornada);
+            }
+            
+            currentSession.finJornada = formatTime(horaFin);
+            currentSession.finJornadaOriginal = formatTime(now);
+            currentSession.tipoFinJornada = tipoFinJornada;
             currentSession.seHaCenado = seHaCenado;
             currentSession.hayPernocta = hayPernocta;
             
@@ -953,6 +1017,50 @@
             if (day >= 1 && day <= 5) return 'L-V';
             if (day === 6) return hour < 13 ? 'sabado-manana' : 'sabado-tarde';
             return 'S-D-F';
+        }
+
+        function redondearHoraPorCuartos(fecha, tipoEntrada) {
+            const nuevaFecha = new Date(fecha);
+            const minutos = nuevaFecha.getMinutes();
+            
+            // Determinar a qué cuarto de hora corresponde
+            let cuartoActual;
+            if (minutos < 15) cuartoActual = 0;
+            else if (minutos < 30) cuartoActual = 15;
+            else if (minutos < 45) cuartoActual = 30;
+            else cuartoActual = 45;
+            
+            if (tipoEntrada === 'temprano') {
+                // Redondear hacia arriba
+                if (minutos === cuartoActual) {
+                    // Ya está en un cuarto exacto, no redondear
+                    return nuevaFecha;
+                } else {
+                    // Redondear al siguiente cuarto
+                    let siguienteCuarto = cuartoActual + 15;
+                    if (siguienteCuarto >= 60) {
+                        nuevaFecha.setHours(nuevaFecha.getHours() + 1);
+                        nuevaFecha.setMinutes(0);
+                    } else {
+                        nuevaFecha.setMinutes(siguienteCuarto);
+                    }
+                }
+            } else if (tipoEntrada === 'tarde') {
+                // Redondear hacia abajo
+                if (minutos === cuartoActual) {
+                    // Ya está en un cuarto exacto, no redondear
+                    return nuevaFecha;
+                } else {
+                    // Redondear al cuarto actual (hacia abajo)
+                    nuevaFecha.setMinutes(cuartoActual);
+                }
+            }
+            
+            // Establecer segundos a 0
+            nuevaFecha.setSeconds(0);
+            nuevaFecha.setMilliseconds(0);
+            
+            return nuevaFecha;
         }
 
         function calculateHours() {
@@ -1146,6 +1254,15 @@
                     total += parseFloat(config.dietaInternacionalSDF || 30);
                 }
                 
+                // Complemento de pernocta internacional
+                if (currentSession.hayPernocta === 'si') {
+                    if (currentSession.dia === 'L-V') {
+                        total += parseFloat(config.pernoctaInternacionalLV || 20);
+                    } else {
+                        total += parseFloat(config.pernoctaInternacionalSDF || 25);
+                    }
+                }
+                
                 // Horas extra internacionales
                 if (currentSession.horasExtra > 0) {
                     let tarifaExtra;
@@ -1195,6 +1312,8 @@
                 sinPernoctaSDF: document.getElementById('sinPernoctaSDF').value,
                 dietaInternacionalLV: document.getElementById('dietaInternacionalLV').value,
                 dietaInternacionalSDF: document.getElementById('dietaInternacionalSDF').value,
+                pernoctaInternacionalLV: document.getElementById('pernoctaInternacionalLV').value,
+                pernoctaInternacionalSDF: document.getElementById('pernoctaInternacionalSDF').value,
                 extraTaller: document.getElementById('extraTaller').value,
                 extraCliente: document.getElementById('extraCliente').value,
                 extraEspecial: document.getElementById('extraEspecial').value,
@@ -1230,6 +1349,8 @@
                     sinPernoctaSDF: '10',
                     dietaInternacionalLV: '26',
                     dietaInternacionalSDF: '30',
+                    pernoctaInternacionalLV: '20',
+                    pernoctaInternacionalSDF: '25',
                     extraTaller: '22.23',
                     extraCliente: '23.82',
                     extraEspecial: '27.79',
@@ -1318,6 +1439,15 @@
                         totalComplementos += parseFloat(config.dietaInternacionalLV || 26);
                     } else {
                         totalComplementos += parseFloat(config.dietaInternacionalSDF || 30);
+                    }
+                    
+                    // Pernocta internacional
+                    if (session.hayPernocta === 'si') {
+                        if (session.dia === 'L-V') {
+                            totalComplementos += parseFloat(config.pernoctaInternacionalLV || 20);
+                        } else {
+                            totalComplementos += parseFloat(config.pernoctaInternacionalSDF || 25);
+                        }
                     }
                     
                     // Horas extra internacionales
@@ -1443,6 +1573,17 @@
                 const detailRow = document.createElement('tr');
                 detailRow.className = 'detail-row';
                 detailRow.id = `detailRow${index}`;
+                
+                // Determinar el estado de pernocta según el tipo de servicio
+                let pernoctaStatus;
+                if (session.tipoServicio === 'internacional') {
+                    pernoctaStatus = session.hayPernocta === 'si' ? '✅ Sí' : '❌ No';
+                } else if (session.ubicacion === 'cliente') {
+                    pernoctaStatus = session.hayPernocta === 'si' ? '✅ Sí' : '❌ No';
+                } else {
+                    pernoctaStatus = 'N/A Taller';
+                }
+                
                 detailRow.innerHTML = `
                     <td colspan="10">
                         <div class="detail-content">
@@ -1456,6 +1597,14 @@
                                     <span class="detail-value">${session.vueltaComer || '-'}</span>
                                 </div>
                                 <div class="detail-item">
+                                    <span class="detail-label">Fin Jornada Original:</span>
+                                    <span class="detail-value">${session.finJornadaOriginal || session.finJornada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Fin Jornada:</span>
+                                    <span class="detail-value">${session.tipoFinJornada ? (session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1)) : 'Puntual'}</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Horas Nocturnas:</span>
                                     <span class="detail-value">${formatHours(session.horasNocturnas)}</span>
                                 </div>
@@ -1465,15 +1614,23 @@
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">¿Ha Comido?:</span>
-                                    <span class="detail-value">${session.seHaComido === 'si' ? '✅ Sí' : '❌ No'}</span>
+                                    <span class="detail-value">${session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaComido === 'si' ? '✅ Sí' : '❌ No')}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">¿Ha Cenado?:</span>
-                                    <span class="detail-value">${session.seHaCenado === 'si' ? '✅ Sí' : '❌ No'}</span>
+                                    <span class="detail-value">${session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaCenado === 'si' ? '✅ Sí' : '❌ No')}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">¿Hay Pernocta?:</span>
-                                    <span class="detail-value">${session.hayPernocta === 'si' ? '✅ Sí' : (session.ubicacion === 'cliente' ? '❌ No' : 'N/A Taller')}</span>
+                                    <span class="detail-value">${pernoctaStatus}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Entrada Original:</span>
+                                    <span class="detail-value">${session.entradaOriginal || session.entrada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Entrada:</span>
+                                    <span class="detail-value">${session.tipoEntrada ? (session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1)) : 'Puntual'}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">¿Es Festivo?:</span>
@@ -1546,6 +1703,14 @@
                             <input type="time" id="editEntrada" value="${session.entrada}" required>
                         </div>
                         <div class="form-group">
+                            <label>Tipo de Entrada</label>
+                            <select id="editTipoEntrada">
+                                <option value="temprano" ${session.tipoEntrada === 'temprano' ? 'selected' : ''}>Temprano</option>
+                                <option value="tarde" ${session.tipoEntrada === 'tarde' ? 'selected' : ''}>Tarde</option>
+                                <option value="puntual" ${(session.tipoEntrada || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Salida Comer</label>
                             <input type="time" id="editSalidaComer" value="${session.salidaComer || ''}">
                         </div>
@@ -1558,17 +1723,17 @@
                             <input type="time" id="editFinJornada" value="${session.finJornada}" required>
                         </div>
                         <div class="form-group" id="editComidaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
-                            <label>¿Se ha comido?</label>
+                            <label>¿Comida fuera?</label>
                             <select id="editSeHaComido">
-                                <option value="si" ${session.seHaComido === 'si' ? 'selected' : ''}>Sí</option>
                                 <option value="no" ${session.seHaComido === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.seHaComido === 'si' ? 'selected' : ''}>Sí</option>
                             </select>
                         </div>
                         <div class="form-group" id="editCenaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
-                            <label>¿Se ha cenado?</label>
+                            <label>¿Cena fuera?</label>
                             <select id="editSeHaCenado">
-                                <option value="si" ${session.seHaCenado === 'si' ? 'selected' : ''}>Sí</option>
                                 <option value="no" ${session.seHaCenado === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.seHaCenado === 'si' ? 'selected' : ''}>Sí</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1578,11 +1743,11 @@
                                 <option value="si" ${session.esFestivo ? 'selected' : ''}>Sí</option>
                             </select>
                         </div>
-                        <div class="form-group" id="editPernoctaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
+                        <div class="form-group" id="editPernoctaGroup" style="display: ${(session.tipoServicio === 'nacional' && session.ubicacion === 'cliente') || session.tipoServicio === 'internacional' ? 'block' : 'none'}">
                             <label>¿Hay pernocta?</label>
                             <select id="editHayPernocta">
-                                <option value="si" ${session.hayPernocta === 'si' ? 'selected' : ''}>Sí</option>
                                 <option value="no" ${session.hayPernocta === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.hayPernocta === 'si' ? 'selected' : ''}>Sí</option>
                             </select>
                         </div>
                         <div class="modal-buttons">
@@ -1598,14 +1763,37 @@
             // Función para toggle de ubicación en edición
             window.toggleEditUbicacion = function() {
                 const tipoServicio = document.getElementById('editTipoServicio').value;
-                const groups = ['editUbicacionGroup', 'editComidaGroup', 'editCenaGroup', 'editPernoctaGroup'];
-                groups.forEach(groupId => {
-                    const group = document.getElementById(groupId);
-                    if (group) {
-                        group.style.display = tipoServicio === 'nacional' ? 'block' : 'none';
-                    }
-                });
+                const comidaGroup = document.getElementById('editComidaGroup');
+                const cenaGroup = document.getElementById('editCenaGroup');
+                const ubicacionGroup = document.getElementById('editUbicacionGroup');
+                const pernoctaGroup = document.getElementById('editPernoctaGroup');
+                
+                if (tipoServicio === 'nacional') {
+                    ubicacionGroup.style.display = 'block';
+                    comidaGroup.style.display = 'block';
+                    cenaGroup.style.display = 'block';
+                    
+                    // Mostrar pernocta solo si es cliente
+                    const ubicacion = document.getElementById('editUbicacion').value;
+                    pernoctaGroup.style.display = ubicacion === 'cliente' ? 'block' : 'none';
+                } else {
+                    // Internacional
+                    ubicacionGroup.style.display = 'none';
+                    comidaGroup.style.display = 'none';
+                    cenaGroup.style.display = 'none';
+                    pernoctaGroup.style.display = 'block'; // Siempre mostrar pernocta para internacional
+                }
             };
+            
+            // Event listener para cambio de ubicación
+            document.getElementById('editUbicacion').addEventListener('change', function() {
+                const tipoServicio = document.getElementById('editTipoServicio').value;
+                const pernoctaGroup = document.getElementById('editPernoctaGroup');
+                
+                if (tipoServicio === 'nacional') {
+                    pernoctaGroup.style.display = this.value === 'cliente' ? 'block' : 'none';
+                }
+            });
             
             document.getElementById('formEdit').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -1617,6 +1805,7 @@
                 session.ubicacion = session.tipoServicio === 'nacional' ? document.getElementById('editUbicacion').value : null;
                 session.esFestivo = document.getElementById('editEsFestivo').value === 'si';
                 session.entrada = document.getElementById('editEntrada').value;
+                session.tipoEntrada = document.getElementById('editTipoEntrada').value;
                 session.salidaComer = document.getElementById('editSalidaComer').value || null;
                 session.vueltaComer = document.getElementById('editVueltaComer').value || null;
                 session.finJornada = document.getElementById('editFinJornada').value;
@@ -1624,6 +1813,11 @@
                 if (session.tipoServicio === 'nacional') {
                     session.seHaComido = document.getElementById('editSeHaComido').value;
                     session.seHaCenado = document.getElementById('editSeHaCenado').value;
+                    session.hayPernocta = session.ubicacion === 'cliente' ? document.getElementById('editHayPernocta').value : 'no';
+                } else {
+                    // Internacional: no comida/cena (dieta incluye todo), pero sí pernocta
+                    session.seHaComido = 'no';
+                    session.seHaCenado = 'no';
                     session.hayPernocta = document.getElementById('editHayPernocta').value;
                 }
                 
@@ -1689,6 +1883,13 @@
                 updateRegistroTable();
                 updateSummary();
             }
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('fechaInicio').value = '';
+            document.getElementById('fechaFin').value = '';
+            document.getElementById('filtroTipo').value = 'todos';
+            updateRegistroTable();
         }
 
         // Funciones de importación/exportación
