@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ana Albiach Fichajes</title>
-    <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+    <title>Dashboard de Fichaje</title>
     <style>
         * {
             margin: 0;
@@ -735,8 +734,9 @@
                 <div class="form-group">
                     <label>Tipo de Fin de Jornada</label>
                     <select id="tipoFinJornada">
-                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        
                         <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
                         <option value="puntual">Puntual (sin redondeo)</option>
                     </select>
                 </div>
@@ -1265,15 +1265,31 @@
                 }
                 
                 // Horas extra internacionales
-                if (currentSession.horasExtra > 0) {
-                    let tarifaExtra;
-                    if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
-                        tarifaExtra = parseFloat(config.extraEspecial || 27.79);
-                    } else {
-                        tarifaExtra = parseFloat(config.extraInternacional || 22.23);
-                    }
-                    total += currentSession.horasExtra * tarifaExtra;
-                }
+if (currentSession.horasExtra > 0) {
+    if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
+        // Sábado tarde, domingo o festivo - todas las horas son especiales
+        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+        total += currentSession.horasExtra * tarifaExtraEspecial;
+    } else {
+        // Día L-V o sábado mañana - separar horas extra normales de nocturnas
+        const tarifaExtraNormal = parseFloat(config.extraInternacional || 22.23);
+        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+        
+        // Calcular cuántas de las horas extra son nocturnas
+        const horasExtraNocturnas = Math.min(currentSession.horasNocturnas, currentSession.horasExtra);
+        const horasExtraNormales = currentSession.horasExtra - horasExtraNocturnas;
+        
+        // Aplicar tarifas
+        total += horasExtraNormales * tarifaExtraNormal;
+        total += horasExtraNocturnas * tarifaExtraEspecial;
+        
+        // Guardar el desglose para el resumen (igual que nacional)
+        currentSession.horasExtraNormales = horasExtraNormales;
+        currentSession.horasExtraNocturnas = horasExtraNocturnas;
+        currentSession.importeExtraNormales = horasExtraNormales * tarifaExtraNormal;
+        currentSession.importeExtraNocturnas = horasExtraNocturnas * tarifaExtraEspecial;
+    }
+}
             }
             
             currentSession.importeTotal = Math.round(total * 100) / 100;
