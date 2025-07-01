@@ -475,7 +475,14 @@
             </div>
 
             <div class="summary-card">
-                <div class="summary-title">Resumen del Mes Actual</div>
+                <div class="summary-title">
+                    Resumen Mensual
+                    <div style="margin-top: 10px;">
+                        <select id="mesResumen" onchange="updateSummary()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: white;">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                </div>
                 <div class="summary-grid" id="summaryGrid">
                     <!-- Se llena dinámicamente -->
                 </div>
@@ -1379,12 +1386,18 @@
 
         // Funciones de resumen
         function updateSummary() {
-            const currentMonth = new Date().getMonth();
-            const currentYear = new Date().getFullYear();
+            // Primero actualizar las opciones del desplegable
+            updateMonthSelector();
+            
+            // Obtener el mes seleccionado
+            const selectedValue = document.getElementById('mesResumen').value;
+            if (!selectedValue) return;
+            
+            const [year, month] = selectedValue.split('-').map(Number);
             
             const monthSessions = allSessions.filter(session => {
                 const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
-                return sessionDate.getMonth() === currentMonth && sessionDate.getFullYear() === currentYear;
+                return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
             });
             
             const totalDias = monthSessions.length;
@@ -1481,6 +1494,16 @@
                 }
             });
             
+            // Mostrar si no hay datos para el mes seleccionado
+            if (totalDias === 0) {
+                document.getElementById('summaryGrid').innerHTML = `
+                    <div class="summary-item" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666; font-style: italic;">
+                        No hay registros para este mes
+                    </div>
+                `;
+                return;
+            }
+            
             document.getElementById('summaryGrid').innerHTML = `
                 <div class="summary-item highlight">
                     <div class="value">${totalDias}</div>
@@ -1519,6 +1542,72 @@
                     <div class="label">Importe Total</div>
                 </div>
             `;
+        }
+
+        function updateMonthSelector() {
+            const selector = document.getElementById('mesResumen');
+            
+            // Obtener todos los meses únicos de las sesiones
+            const monthsWithData = new Set();
+            
+            allSessions.forEach(session => {
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                const year = sessionDate.getFullYear();
+                const month = sessionDate.getMonth();
+                monthsWithData.add(`${year}-${month}`);
+            });
+            
+            // Convertir a array y ordenar
+            const sortedMonths = Array.from(monthsWithData).sort((a, b) => {
+                const [yearA, monthA] = a.split('-').map(Number);
+                const [yearB, monthB] = b.split('-').map(Number);
+                
+                if (yearA !== yearB) return yearB - yearA; // Años más recientes primero
+                return monthB - monthA; // Meses más recientes primero
+            });
+            
+            // Agregar el mes actual aunque no tenga datos
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth();
+            const currentKey = `${currentYear}-${currentMonth}`;
+            
+            if (!monthsWithData.has(currentKey)) {
+                sortedMonths.unshift(currentKey);
+            }
+            
+            // Guardar selección actual
+            const currentSelection = selector.value;
+            
+            // Limpiar opciones
+            selector.innerHTML = '';
+            
+            // Agregar opciones
+            sortedMonths.forEach(monthKey => {
+                const [year, month] = monthKey.split('-').map(Number);
+                const monthName = new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = monthKey;
+                option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                
+                // Marcar si tiene datos
+                if (monthsWithData.has(monthKey)) {
+                    const sessionsCount = allSessions.filter(session => {
+                        const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                        return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
+                    }).length;
+                    option.textContent += ` (${sessionsCount} días)`;
+                }
+                
+                selector.appendChild(option);
+            });
+            
+            // Restaurar selección o seleccionar mes actual
+            if (currentSelection && selector.querySelector(`option[value="${currentSelection}"]`)) {
+                selector.value = currentSelection;
+            } else {
+                selector.value = currentKey; // Mes actual por defecto
+            }
         }
 
         // Funciones de tabla de registro
