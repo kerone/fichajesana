@@ -1819,8 +1819,8 @@
                     }, {
                         label: 'Importe Extra (€)',
                         data: monthlyData.importeExtra,
-                        borderColor: '#0f172a',
-                        backgroundColor: 'rgba(15, 23, 42, 0.1)',
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
                         borderWidth: isMobile ? 2 : 3,
                         fill: true,
                         tension: 0.4,
@@ -1932,7 +1932,7 @@
                             title: {
                                 display: true,
                                 text: isMobile ? '€' : 'Importe Extra (€)',
-                                color: '#0f172a',
+                                color: '#059669',
                                 font: {
                                     size: isMobile ? 11 : 14,
                                     weight: 'bold'
@@ -1942,7 +1942,7 @@
                                 drawOnChartArea: false,
                             },
                             ticks: {
-                                color: '#0f172a',
+                                color: '#059669',
                                 font: {
                                     size: isMobile ? 10 : 12,
                                     weight: 'bold'
@@ -2408,12 +2408,28 @@
                         <div class="detail-content">
                             <div class="detail-grid">
                                 <div class="detail-item">
+                                    <span class="detail-label">Entrada:</span>
+                                    <span class="detail-value">${session.entrada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Entrada Original:</span>
+                                    <span class="detail-value">${session.entradaOriginal || session.entrada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Entrada:</span>
+                                    <span class="detail-value">${session.tipoEntrada ? (session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1)) : 'Puntual'}</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Salida Comer:</span>
                                     <span class="detail-value">${session.salidaComer || '-'}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Vuelta Comer:</span>
                                     <span class="detail-value">${session.vueltaComer || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fin Jornada:</span>
+                                    <span class="detail-value">${session.finJornada}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Fin Jornada Original:</span>
@@ -2424,12 +2440,24 @@
                                     <span class="detail-value">${session.tipoFinJornada ? (session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1)) : 'Puntual'}</span>
                                 </div>
                                 <div class="detail-item">
+                                    <span class="detail-label">Horas Trabajadas:</span>
+                                    <span class="detail-value">${formatHours(session.horasTrabajadas)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Horas Extra:</span>
+                                    <span class="detail-value">${formatHours(session.horasExtra)}</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Horas Nocturnas:</span>
                                     <span class="detail-value">${formatHours(session.horasNocturnas)}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Día Tipo:</span>
                                     <span class="detail-value">${session.dia}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">¿Es Festivo?:</span>
+                                    <span class="detail-value">${session.esFestivo ? '🎉 Sí' : '📅 No'}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">¿Ha Comido?:</span>
@@ -2442,18 +2470,6 @@
                                 <div class="detail-item">
                                     <span class="detail-label">¿Hay Pernocta?:</span>
                                     <span class="detail-value">${pernoctaStatus}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Entrada Original:</span>
-                                    <span class="detail-value">${session.entradaOriginal || session.entrada}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Tipo Entrada:</span>
-                                    <span class="detail-value">${session.tipoEntrada ? (session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1)) : 'Puntual'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">¿Es Festivo?:</span>
-                                    <span class="detail-value">${session.esFestivo ? '🎉 Sí' : '📅 No'}</span>
                                 </div>
                             </div>
                         </div>
