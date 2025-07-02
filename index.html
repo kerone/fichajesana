@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Fichaje</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -487,6 +488,13 @@
                     <!-- Se llena dinámicamente -->
                 </div>
             </div>
+
+            <div class="summary-card">
+                <div class="summary-title">📈 Evolución Mensual</div>
+                <div style="position: relative; height: 400px; margin-bottom: 20px;">
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+            </div>
         </div>
 
         <!-- Pestaña de Registro -->
@@ -761,6 +769,7 @@
         let currentSession = null;
         let allSessions = [];
         let config = {};
+        let evolutionChart = null;
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -769,6 +778,7 @@
             updateClock();
             updateButtonsState();
             updateSummary();
+            updateEvolutionChart();
             updateRegistroTable();
             setInterval(updateClock, 1000);
         });
@@ -1013,6 +1023,7 @@
             saveSessions();
             updateButtonsState();
             updateSummary();
+            updateEvolutionChart();
             closeModal();
         }
 
@@ -1220,17 +1231,39 @@
                     }
                 }
                 
-                // Horas extra - Separar normales de nocturnas/festivas
+                // Horas extra - Lógica mejorada para sábados
                 if (currentSession.horasExtra > 0) {
-                    let tarifaExtraNormal;
-                    let tarifaExtraEspecial;
-                    
-                    if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
-                        // Sábado tarde, domingo o festivo - todas las horas son especiales
-                        tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                    if (currentSession.dia === 'S-D-F') {
+                        // Domingo o festivo - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
                         total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-tarde') {
+                        // Sábado tarde (≥13:00) - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-manana') {
+                        // Sábado mañana (<13:00) - separar horas antes y después de las 13:00
+                        const { horasNormales, horasEspeciales } = calculateSaturdayHours();
+                        
+                        let tarifaExtraNormal;
+                        if (currentSession.ubicacion === 'taller') {
+                            tarifaExtraNormal = parseFloat(config.extraTaller || 22.23);
+                        } else {
+                            tarifaExtraNormal = parseFloat(config.extraCliente || 23.82);
+                        }
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        
+                        total += horasNormales * tarifaExtraNormal;
+                        total += horasEspeciales * tarifaExtraEspecial;
+                        
+                        // Guardar desglose
+                        currentSession.horasExtraNormales = horasNormales;
+                        currentSession.horasExtraEspeciales = horasEspeciales;
+                        currentSession.importeExtraNormales = horasNormales * tarifaExtraNormal;
+                        currentSession.importeExtraEspeciales = horasEspeciales * tarifaExtraEspecial;
                     } else {
                         // Día L-V - separar horas extra normales de nocturnas
+                        let tarifaExtraNormal;
                         if (currentSession.ubicacion === 'taller') {
                             tarifaExtraNormal = parseFloat(config.extraTaller || 22.23);
                         } else {
@@ -1245,7 +1278,7 @@
                         total += horasExtraNormales * tarifaExtraNormal;
                         
                         // Las horas nocturnas tienen tarifa especial
-                        tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
                         total += horasExtraNocturnas * tarifaExtraEspecial;
                         
                         // Guardar el desglose para el resumen
@@ -1272,12 +1305,31 @@
                     }
                 }
                 
-                // Horas extra internacionales
+                // Horas extra internacionales - Lógica mejorada para sábados
                 if (currentSession.horasExtra > 0) {
-                    if (currentSession.dia === 'sabado-tarde' || currentSession.dia === 'S-D-F') {
-                        // Sábado tarde, domingo o festivo - todas las horas son especiales
+                    if (currentSession.dia === 'S-D-F') {
+                        // Domingo o festivo - todas las horas son especiales
                         const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
                         total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-tarde') {
+                        // Sábado tarde (≥13:00) - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-manana') {
+                        // Sábado mañana (<13:00) - separar horas antes y después de las 13:00
+                        const { horasNormales, horasEspeciales } = calculateSaturdayHours();
+                        
+                        const tarifaExtraNormal = parseFloat(config.extraInternacional || 22.23);
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        
+                        total += horasNormales * tarifaExtraNormal;
+                        total += horasEspeciales * tarifaExtraEspecial;
+                        
+                        // Guardar desglose
+                        currentSession.horasExtraNormales = horasNormales;
+                        currentSession.horasExtraEspeciales = horasEspeciales;
+                        currentSession.importeExtraNormales = horasNormales * tarifaExtraNormal;
+                        currentSession.importeExtraEspeciales = horasEspeciales * tarifaExtraEspecial;
                     } else {
                         // Día L-V o sábado mañana - separar horas extra normales de nocturnas
                         const tarifaExtraNormal = parseFloat(config.extraInternacional || 22.23);
@@ -1301,6 +1353,91 @@
             }
             
             currentSession.importeTotal = Math.round(total * 100) / 100;
+        }
+
+        // Nueva función para calcular horas de sábado correctamente
+        function calculateSaturdayHours() {
+            if (currentSession.dia !== 'sabado-manana') {
+                return { horasNormales: 0, horasEspeciales: currentSession.horasExtra };
+            }
+
+            const entrada = parseTime(currentSession.entrada);
+            let salidaComer = null;
+            let vueltaComer = null;
+            let finJornada = null;
+            
+            if (currentSession.salidaComer) {
+                salidaComer = parseTimeForCalculation(currentSession.salidaComer, entrada);
+            }
+            if (currentSession.vueltaComer) {
+                vueltaComer = parseTimeForCalculation(currentSession.vueltaComer, salidaComer || entrada);
+            }
+            finJornada = parseTimeForCalculation(currentSession.finJornada, vueltaComer || salidaComer || entrada);
+            
+            // Crear fecha base para las 13:00 del mismo día
+            const limite13h = new Date(entrada);
+            limite13h.setHours(13, 0, 0, 0);
+            
+            let horasAntes13 = 0;
+            let horasDespues13 = 0;
+            
+            // Calcular horas de mañana (hasta salida a comer o 13:00)
+            if (salidaComer) {
+                const finMañana = salidaComer < limite13h ? salidaComer : limite13h;
+                if (finMañana > entrada) {
+                    horasAntes13 += (finMañana - entrada) / (1000 * 60 * 60);
+                }
+                if (salidaComer > limite13h) {
+                    horasDespues13 += (salidaComer - limite13h) / (1000 * 60 * 60);
+                }
+            }
+            
+            // Calcular horas de tarde (desde vuelta de comer hasta fin)
+            if (vueltaComer) {
+                const inicioTarde = vueltaComer > limite13h ? vueltaComer : limite13h;
+                if (finJornada > inicioTarde) {
+                    if (inicioTarde >= limite13h) {
+                        horasDespues13 += (finJornada - inicioTarde) / (1000 * 60 * 60);
+                    } else {
+                        // Si vuelta de comer es antes de las 13:00
+                        if (finJornada <= limite13h) {
+                            horasAntes13 += (finJornada - vueltaComer) / (1000 * 60 * 60);
+                        } else {
+                            horasAntes13 += (limite13h - vueltaComer) / (1000 * 60 * 60);
+                            horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                        }
+                    }
+                }
+            } else if (!salidaComer) {
+                // Jornada continua sin pausa para comer
+                if (finJornada <= limite13h) {
+                    horasAntes13 += (finJornada - entrada) / (1000 * 60 * 60);
+                } else {
+                    horasAntes13 += (limite13h - entrada) / (1000 * 60 * 60);
+                    horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                }
+            }
+            
+            const totalHorasTrabajadas = horasAntes13 + horasDespues13;
+            
+            // Las horas extra se calculan sobre el total trabajado
+            // Solo son extra las que superan 8.25h (para nacional) o las que correspondan
+            let horasExtraAntes13 = 0;
+            let horasExtraDespues13 = 0;
+            
+            if (currentSession.horasExtra > 0) {
+                // Distribución proporcional de las horas extra
+                const proporcionAntes13 = totalHorasTrabajadas > 0 ? horasAntes13 / totalHorasTrabajadas : 0;
+                const proporcionDespues13 = totalHorasTrabajadas > 0 ? horasDespues13 / totalHorasTrabajadas : 0;
+                
+                horasExtraAntes13 = currentSession.horasExtra * proporcionAntes13;
+                horasExtraDespues13 = currentSession.horasExtra * proporcionDespues13;
+            }
+            
+            return {
+                horasNormales: Math.round(horasExtraAntes13 * 100) / 100,
+                horasEspeciales: Math.round(horasExtraDespues13 * 100) / 100
+            };
         }
 
         // Funciones de almacenamiento
@@ -1384,6 +1521,241 @@
             }
         }
 
+        // Función para crear/actualizar el gráfico de evolución
+        function updateEvolutionChart() {
+            // Obtener datos agrupados por mes
+            const monthlyData = getMonthlyEvolutionData();
+            
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            // Destruir gráfico existente si existe
+            if (evolutionChart) {
+                evolutionChart.destroy();
+            }
+            
+            evolutionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: 'Horas Extra',
+                        data: monthlyData.horasExtra,
+                        borderColor: '#007bff',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Importe Extra (€)',
+                        data: monthlyData.importeExtra,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: '#007bff',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return `Horas Extra: ${context.parsed.y.toFixed(1)}h`;
+                                    } else {
+                                        return `Importe Extra: ${context.parsed.y.toFixed(2)}€`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Mes',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Horas Extra',
+                                color: '#007bff',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                color: '#007bff',
+                                font: {
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(0) + 'h';
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Importe Extra (€)',
+                                color: '#28a745',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: '#28a745',
+                                font: {
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(0) + '€';
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 6,
+                            hoverRadius: 8,
+                            borderWidth: 2,
+                            backgroundColor: 'white'
+                        }
+                    }
+                }
+            });
+        }
+
+        function getMonthlyEvolutionData() {
+            // Agrupar sesiones por mes
+            const monthlyStats = {};
+            
+            allSessions.forEach(session => {
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                const year = sessionDate.getFullYear();
+                const month = sessionDate.getMonth();
+                const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
+                
+                if (!monthlyStats[monthKey]) {
+                    monthlyStats[monthKey] = {
+                        horasExtra: 0,
+                        importeExtra: 0,
+                        year: year,
+                        month: month
+                    };
+                }
+                
+                monthlyStats[monthKey].horasExtra += session.horasExtra || 0;
+                
+                // Calcular importe extra (solo las horas extra, no complementos)
+                let importeExtraSession = 0;
+                if (session.horasExtra > 0) {
+                    if (session.tipoServicio === 'nacional') {
+                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                            importeExtraSession += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else {
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas || 0, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            let tarifaNormal = session.ubicacion === 'taller' ? 
+                                parseFloat(config.extraTaller || 22.23) : 
+                                parseFloat(config.extraCliente || 23.82);
+                            
+                            importeExtraSession += horasExtraNormales * tarifaNormal;
+                            importeExtraSession += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    } else { // Internacional
+                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                            importeExtraSession += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else {
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas || 0, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            importeExtraSession += horasExtraNormales * parseFloat(config.extraInternacional || 22.23);
+                            importeExtraSession += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                }
+                
+                monthlyStats[monthKey].importeExtra += importeExtraSession;
+            });
+            
+            // Convertir a arrays ordenados
+            const sortedMonths = Object.keys(monthlyStats).sort();
+            
+            // Limitar a los últimos 12 meses para mejor visualización
+            const recentMonths = sortedMonths.slice(-12);
+            
+            const labels = recentMonths.map(monthKey => {
+                const [year, month] = monthKey.split('-');
+                const date = new Date(year, parseInt(month), 1);
+                return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+            });
+            
+            const horasExtra = recentMonths.map(monthKey => monthlyStats[monthKey].horasExtra);
+            const importeExtra = recentMonths.map(monthKey => monthlyStats[monthKey].importeExtra);
+            
+            return {
+                labels,
+                horasExtra,
+                importeExtra
+            };
+        }
+
         // Funciones de resumen
         function updateSummary() {
             // Primero actualizar las opciones del desplegable
@@ -1441,24 +1813,48 @@
                     
                     // Horas extra
                     if (session.horasExtra > 0) {
-                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
-                            // Todas las horas son especiales
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas las horas son especiales
                             totalHorasExtrasEspeciales += session.horasExtra;
                             importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde (≥13:00) - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana (<13:00) - usar desglose calculado si existe
+                            if (session.horasExtraNormales !== undefined && session.horasExtraEspeciales !== undefined) {
+                                totalHorasExtrasNormales += session.horasExtraNormales;
+                                totalHorasExtrasEspeciales += session.horasExtraEspeciales;
+                                importeExtrasNormales += session.importeExtraNormales || 0;
+                                importeExtrasEspeciales += session.importeExtraEspeciales || 0;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5; // Asumimos 50% después de las 13:00
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                totalHorasExtrasNormales += horasNormales;
+                                totalHorasExtrasEspeciales += horasEspeciales;
+                                
+                                let tarifaNormal = session.ubicacion === 'taller' ? 
+                                    parseFloat(config.extraTaller || 22.23) : 
+                                    parseFloat(config.extraCliente || 23.82);
+                                
+                                importeExtrasNormales += horasNormales * tarifaNormal;
+                                importeExtrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
                         } else {
-                            // Separar normales de nocturnas
+                            // Días L-V - separar normales de nocturnas
                             const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
                             const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
                             
                             totalHorasExtrasNormales += horasExtraNormales;
                             totalHorasExtrasEspeciales += horasExtraNocturnas;
                             
-                            let tarifaNormal;
-                            if (session.ubicacion === 'taller') {
-                                tarifaNormal = parseFloat(config.extraTaller || 22.23);
-                            } else {
-                                tarifaNormal = parseFloat(config.extraCliente || 23.82);
-                            }
+                            let tarifaNormal = session.ubicacion === 'taller' ? 
+                                parseFloat(config.extraTaller || 22.23) : 
+                                parseFloat(config.extraCliente || 23.82);
                             
                             importeExtrasNormales += horasExtraNormales * tarifaNormal;
                             importeExtrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
@@ -1483,12 +1879,43 @@
                     
                     // Horas extra internacionales
                     if (session.horasExtra > 0) {
-                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas las horas son especiales
                             totalHorasExtrasEspeciales += session.horasExtra;
                             importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde (≥13:00) - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana (<13:00) - usar desglose calculado si existe
+                            if (session.horasExtraNormales !== undefined && session.horasExtraEspeciales !== undefined) {
+                                totalHorasExtrasNormales += session.horasExtraNormales;
+                                totalHorasExtrasEspeciales += session.horasExtraEspeciales;
+                                importeExtrasNormales += session.importeExtraNormales || 0;
+                                importeExtrasEspeciales += session.importeExtraEspeciales || 0;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5; // Asumimos 50% después de las 13:00
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                totalHorasExtrasNormales += horasNormales;
+                                totalHorasExtrasEspeciales += horasEspeciales;
+                                
+                                importeExtrasNormales += horasNormales * parseFloat(config.extraInternacional || 22.23);
+                                importeExtrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
                         } else {
-                            totalHorasExtrasNormales += session.horasExtra;
-                            importeExtrasNormales += session.horasExtra * parseFloat(config.extraInternacional || 22.23);
+                            // Días L-V - separar normales de nocturnas
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            totalHorasExtrasNormales += horasExtraNormales;
+                            totalHorasExtrasEspeciales += horasExtraNocturnas;
+                            
+                            importeExtrasNormales += horasExtraNormales * parseFloat(config.extraInternacional || 22.23);
+                            importeExtrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
                         }
                     }
                 }
@@ -1979,6 +2406,7 @@
                 saveSessions();
                 updateRegistroTable();
                 updateSummary();
+                updateEvolutionChart();
                 modal.remove();
             });
         }
@@ -1989,6 +2417,7 @@
                 saveSessions();
                 updateRegistroTable();
                 updateSummary();
+                updateEvolutionChart();
             }
         }
 
@@ -2097,9 +2526,32 @@
                     
                     // Horas extra
                     if (session.horasExtra > 0) {
-                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas especiales
                             extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana - usar desglose si existe
+                            if (session.importeExtraNormales !== undefined && session.importeExtraEspeciales !== undefined) {
+                                extrasNormales += session.importeExtraNormales;
+                                extrasEspeciales += session.importeExtraEspeciales;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5;
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                let tarifaNormal = session.ubicacion === 'taller' ? 
+                                    parseFloat(config.extraTaller || 22.23) : 
+                                    parseFloat(config.extraCliente || 23.82);
+                                
+                                extrasNormales += horasNormales * tarifaNormal;
+                                extrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
                         } else {
+                            // Días L-V - separar normales de nocturnas
                             const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
                             const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
                             
@@ -2130,9 +2582,28 @@
                     
                     // Horas extra internacionales
                     if (session.horasExtra > 0) {
-                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas especiales
                             extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana - usar desglose si existe
+                            if (session.importeExtraNormales !== undefined && session.importeExtraEspeciales !== undefined) {
+                                extrasNormales += session.importeExtraNormales;
+                                extrasEspeciales += session.importeExtraEspeciales;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5;
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                extrasNormales += horasNormales * parseFloat(config.extraInternacional || 22.23);
+                                extrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
                         } else {
+                            // Días L-V - separar normales de nocturnas
                             const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
                             const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
                             
@@ -2225,6 +2696,7 @@
                         loadConfig();
                         updateRegistroTable();
                         updateSummary();
+                        updateEvolutionChart();
                         updateButtonsState();
                         
                         alert('Datos importados correctamente');
