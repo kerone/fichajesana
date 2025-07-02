@@ -13,47 +13,62 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
             min-height: 100vh;
             padding: 10px;
+            color: #334155;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             overflow: hidden;
         }
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .tab {
             flex: 1;
-            padding: 15px 20px;
-            background: #f8f9fa;
+            padding: 18px 20px;
+            background: #f8fafc;
             border: none;
             cursor: pointer;
             font-size: 16px;
-            font-weight: 500;
-            transition: all 0.3s ease;
+            font-weight: 600;
+            transition: all 0.2s ease;
             border-bottom: 3px solid transparent;
+            touch-action: manipulation;
+            user-select: none;
+            color: #64748b;
+            position: relative;
         }
 
         .tab.active {
             background: white;
-            border-bottom-color: #007bff;
-            color: #007bff;
+            border-bottom-color: #334155;
+            color: #334155;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .tab:hover {
-            background: #e9ecef;
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .tab:not(.active):hover {
+            border-bottom-color: #cbd5e1;
         }
 
         .tab-content {
@@ -67,23 +82,26 @@
         }
 
         .status-card {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            background: white;
+            color: #334155;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
             text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
         }
 
         .current-time {
             font-size: 24px;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 10px;
+            color: #0f172a;
         }
 
         .status {
-            font-size: 18px;
-            opacity: 0.9;
+            font-size: 16px;
+            color: #64748b;
         }
 
         .buttons-grid {
@@ -91,22 +109,35 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 15px;
             margin-bottom: 30px;
+            justify-items: center;
+        }
+
+        /* Cuando solo hay un botón visible, centrarlo mejor */
+        .buttons-grid:has(.fichar-btn:only-child) {
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .fichar-btn {
             padding: 20px;
-            border: none;
-            border-radius: 10px;
+            border: 2px solid #334155;
+            border-radius: 8px;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             color: white;
+            background: #334155;
             min-height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
             text-align: center;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 8px rgba(51, 65, 85, 0.15);
         }
 
         .fichar-btn:disabled {
@@ -114,25 +145,16 @@
             cursor: not-allowed;
         }
 
-        .btn-entrada {
-            background: linear-gradient(135deg, #28a745, #20c997);
-        }
-
-        .btn-salida-comer {
-            background: linear-gradient(135deg, #ffc107, #fd7e14);
-        }
-
-        .btn-vuelta-comer {
-            background: linear-gradient(135deg, #17a2b8, #007bff);
-        }
-
-        .btn-fin-jornada {
-            background: linear-gradient(135deg, #dc3545, #bd2130);
-        }
-
         .fichar-btn:not(:disabled):hover {
+            background: #1e293b;
+            border-color: #1e293b;
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 16px rgba(51, 65, 85, 0.25);
+        }
+
+        .fichar-btn:not(:disabled):active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(51, 65, 85, 0.15);
         }
 
         .modal {
@@ -200,27 +222,41 @@
 
         .btn {
             padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            background: white;
+            color: #334155;
         }
 
         .btn-primary {
-            background: #007bff;
+            background: #334155;
             color: white;
+            border-color: #334155;
+        }
+
+        .btn-primary:hover {
+            background: #1e293b;
+            border-color: #1e293b;
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: #64748b;
             color: white;
+            border-color: #64748b;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            border-color: #475569;
         }
 
         .btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .summary-card {
@@ -285,50 +321,57 @@
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             background: white;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid #f1f5f9;
         }
 
         th {
-            background: #f8f9fa;
+            background: #f8fafc;
             font-weight: 600;
-            color: #333;
+            color: #374151;
+            font-size: 14px;
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: #f9fafb;
         }
 
         .action-btn {
             padding: 6px 12px;
-            border: none;
-            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
             margin: 2px;
+            background: white;
+            color: #374151;
+            transition: all 0.2s ease;
         }
 
-        .btn-edit {
-            background: #17a2b8;
-            color: white;
+        .btn-edit:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
         }
 
-        .btn-delete {
-            background: #dc3545;
-            color: white;
+        .btn-delete:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
         }
 
         .expandable-row {
@@ -410,9 +453,14 @@
 
         .import-export {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
         }
 
         .file-input {
@@ -423,24 +471,240 @@
             .container {
                 margin: 0;
                 border-radius: 0;
+                min-height: 100vh;
             }
             
             .tabs {
-                flex-direction: column;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: white;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            }
+            
+            .tab {
+                font-size: 15px;
+                padding: 16px 12px;
+                font-weight: 600;
+            }
+            
+            .tab-content {
+                padding: 15px;
             }
             
             .buttons-grid {
                 grid-template-columns: 1fr;
+                gap: 12px;
+                max-width: 100%;
+            }
+            
+            /* Un solo botón en móvil ocupa todo el ancho disponible */
+            .buttons-grid .fichar-btn {
+                width: 100%;
+                max-width: none;
+            }
+            
+            .fichar-btn {
+                padding: 18px;
+                font-size: 15px;
+                min-height: 70px;
             }
             
             .summary-grid {
                 grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .summary-item {
+                padding: 12px;
+            }
+            
+            .summary-item .value {
+                font-size: 20px;
+            }
+            
+            .summary-item.highlight .value {
+                font-size: 24px;
+            }
+            
+            .summary-item .label {
+                font-size: 12px;
             }
             
             .modal-content {
-                margin: 10% auto;
+                margin: 5% auto;
                 width: 95%;
                 padding: 20px;
+                max-height: 85vh;
+            }
+            
+            .import-export {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .import-export > div {
+                margin: 0 !important;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .import-export > div > div {
+                margin: 5px !important;
+            }
+            
+            .table-container {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 13px;
+            }
+            
+            .action-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-group input,
+            .form-group select {
+                font-size: 16px; /* Evita zoom automático en iOS */
+            }
+            
+            .status-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .current-time {
+                font-size: 20px;
+            }
+            
+            .status {
+                font-size: 16px;
+            }
+            
+            .summary-title {
+                font-size: 18px;
+                margin-bottom: 12px;
+            }
+            
+            #mesResumen {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            /* Optimización para S24 Ultra específicamente */
+            @media (min-width: 400px) and (max-width: 768px) {
+                .summary-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+                
+                .buttons-grid {
+                    grid-template-columns: 1fr;
+                    max-width: 500px;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+                
+                .buttons-grid .fichar-btn {
+                    max-width: 100%;
+                }
+                
+                .fichar-btn {
+                    font-size: 14px;
+                    min-height: 75px;
+                }
+                
+                .import-export {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                
+                .tab-content {
+                    padding: 20px;
+                }
+                
+                th, td {
+                    font-size: 14px;
+                    padding: 10px 8px;
+                }
+            }
+            
+            /* Mejor visualización del gráfico en móvil */
+            .summary-card canvas {
+                height: 350px !important;
+            }
+            
+            /* Para S24 Ultra específicamente, más altura */
+            @media (min-width: 400px) and (max-width: 768px) {
+                .summary-card canvas {
+                    height: 400px !important;
+                }
+                
+                .summary-card:has(canvas) {
+                    margin-bottom: 25px;
+                }
+                
+                .summary-card:has(canvas) > div {
+                    height: 420px !important;
+                    margin-bottom: 25px !important;
+                }
+            }
+            
+            /* Mejoras para formularios en móvil */
+            .modal-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 14px;
+                font-size: 16px;
+            }
+            
+            /* Scroll suave en tablas */
+            .table-container {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            /* Indicador visual para filas expandibles */
+            .expand-btn {
+                font-size: 18px;
+                padding: 8px;
+                min-width: 40px;
+                background: #f8f9fa;
+                border-radius: 6px;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+            }
+            
+            .detail-label {
+                font-size: 12px;
+                margin-bottom: 4px;
+                color: #666;
+            }
+            
+            .detail-value {
+                font-size: 14px;
+                font-weight: bold;
             }
         }
     </style>
@@ -491,7 +755,7 @@
 
             <div class="summary-card">
                 <div class="summary-title">📈 Evolución Mensual</div>
-                <div style="position: relative; height: 400px; margin-bottom: 20px;">
+                <div style="position: relative; height: 400px; margin-bottom: 20px;" id="chartContainer">
                     <canvas id="evolutionChart"></canvas>
                 </div>
             </div>
@@ -692,8 +956,8 @@
                     </select>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Fichar Entrada</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -711,8 +975,8 @@
                     </select>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Fichar Salida</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -723,8 +987,8 @@
             <h3>🔙 Vuelta de Comer</h3>
             <p>¿Confirmar vuelta de la comida?</p>
             <div class="modal-buttons">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="ficharVueltaComer()">Confirmar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
             </div>
         </div>
     </div>
@@ -757,8 +1021,8 @@
                     </select>
                 </div>
                 <div class="modal-buttons">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Finalizar Jornada</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -877,28 +1141,31 @@
             const btnFinJornada = document.getElementById('btnFinJornada');
             const status = document.getElementById('currentStatus');
 
+            // Ocultar todos los botones primero
+            btnEntrada.style.display = 'none';
+            btnSalidaComer.style.display = 'none';
+            btnVueltaComer.style.display = 'none';
+            btnFinJornada.style.display = 'none';
+
             if (!currentSession) {
+                // Solo mostrar botón de entrada
+                btnEntrada.style.display = 'flex';
                 btnEntrada.disabled = false;
-                btnSalidaComer.disabled = true;
-                btnVueltaComer.disabled = true;
-                btnFinJornada.disabled = true;
                 status.textContent = "Listo para fichar entrada";
             } else {
-                btnEntrada.disabled = true;
-                
                 if (!currentSession.salidaComer) {
+                    // Mostrar solo botón de salida para comer
+                    btnSalidaComer.style.display = 'flex';
                     btnSalidaComer.disabled = false;
-                    btnVueltaComer.disabled = true;
-                    btnFinJornada.disabled = true;
                     status.textContent = "Trabajando - Siguiente: Salida para comer";
                 } else if (!currentSession.vueltaComer) {
-                    btnSalidaComer.disabled = true;
+                    // Mostrar solo botón de vuelta de comer
+                    btnVueltaComer.style.display = 'flex';
                     btnVueltaComer.disabled = false;
-                    btnFinJornada.disabled = true;
                     status.textContent = "En pausa para comer - Siguiente: Vuelta de comer";
                 } else if (!currentSession.finJornada) {
-                    btnSalidaComer.disabled = true;
-                    btnVueltaComer.disabled = true;
+                    // Mostrar solo botón de fin de jornada
+                    btnFinJornada.style.display = 'flex';
                     btnFinJornada.disabled = false;
                     status.textContent = "Trabajando - Siguiente: Fin de jornada";
                 }
@@ -1533,6 +1800,9 @@
                 evolutionChart.destroy();
             }
             
+            // Detectar si es móvil
+            const isMobile = window.innerWidth <= 768;
+            
             evolutionChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1540,18 +1810,18 @@
                     datasets: [{
                         label: 'Horas Extra',
                         data: monthlyData.horasExtra,
-                        borderColor: '#007bff',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                        borderWidth: 3,
+                        borderColor: '#64748b',
+                        backgroundColor: 'rgba(100, 116, 139, 0.1)',
+                        borderWidth: isMobile ? 2 : 3,
                         fill: true,
                         tension: 0.4,
                         yAxisID: 'y'
                     }, {
                         label: 'Importe Extra (€)',
                         data: monthlyData.importeExtra,
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderWidth: 3,
+                        borderColor: '#334155',
+                        backgroundColor: 'rgba(51, 65, 85, 0.1)',
+                        borderWidth: isMobile ? 2 : 3,
                         fill: true,
                         tension: 0.4,
                         yAxisID: 'y1'
@@ -1560,6 +1830,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    devicePixelRatio: isMobile ? 2 : undefined, // Mejor calidad en móvil
                     interaction: {
                         mode: 'index',
                         intersect: false,
@@ -1572,9 +1843,9 @@
                             position: 'top',
                             labels: {
                                 usePointStyle: true,
-                                padding: 20,
+                                padding: isMobile ? 15 : 20,
                                 font: {
-                                    size: 14,
+                                    size: isMobile ? 12 : 14,
                                     weight: 'bold'
                                 }
                             }
@@ -1583,10 +1854,16 @@
                             backgroundColor: 'rgba(0, 0, 0, 0.8)',
                             titleColor: 'white',
                             bodyColor: 'white',
-                            borderColor: '#007bff',
+                            borderColor: '#64748b',
                             borderWidth: 1,
                             cornerRadius: 8,
                             displayColors: true,
+                            titleFont: {
+                                size: isMobile ? 12 : 14
+                            },
+                            bodyFont: {
+                                size: isMobile ? 11 : 13
+                            },
                             callbacks: {
                                 label: function(context) {
                                     if (context.datasetIndex === 0) {
@@ -1602,28 +1879,10 @@
                         x: {
                             display: true,
                             title: {
-                                display: true,
+                                display: !isMobile, // Ocultar título en móvil para ahorrar espacio
                                 text: 'Mes',
                                 font: {
-                                    size: 14,
-                                    weight: 'bold'
-                                }
-                            },
-                            grid: {
-                                display: true,
-                                color: 'rgba(0, 0, 0, 0.1)'
-                            }
-                        },
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: {
-                                display: true,
-                                text: 'Horas Extra',
-                                color: '#007bff',
-                                font: {
-                                    size: 14,
+                                    size: isMobile ? 12 : 14,
                                     weight: 'bold'
                                 }
                             },
@@ -1632,8 +1891,33 @@
                                 color: 'rgba(0, 0, 0, 0.1)'
                             },
                             ticks: {
-                                color: '#007bff',
                                 font: {
+                                    size: isMobile ? 10 : 12
+                                },
+                                maxRotation: isMobile ? 45 : 0, // Rotar etiquetas en móvil si es necesario
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: isMobile ? 'Horas' : 'Horas Extra',
+                                color: '#64748b',
+                                font: {
+                                    size: isMobile ? 11 : 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                font: {
+                                    size: isMobile ? 10 : 12,
                                     weight: 'bold'
                                 },
                                 callback: function(value) {
@@ -1647,10 +1931,10 @@
                             position: 'right',
                             title: {
                                 display: true,
-                                text: 'Importe Extra (€)',
-                                color: '#28a745',
+                                text: isMobile ? '€' : 'Importe Extra (€)',
+                                color: '#334155',
                                 font: {
-                                    size: 14,
+                                    size: isMobile ? 11 : 14,
                                     weight: 'bold'
                                 }
                             },
@@ -1658,8 +1942,9 @@
                                 drawOnChartArea: false,
                             },
                             ticks: {
-                                color: '#28a745',
+                                color: '#334155',
                                 font: {
+                                    size: isMobile ? 10 : 12,
                                     weight: 'bold'
                                 },
                                 callback: function(value) {
@@ -1670,8 +1955,8 @@
                     },
                     elements: {
                         point: {
-                            radius: 6,
-                            hoverRadius: 8,
+                            radius: isMobile ? 4 : 6,
+                            hoverRadius: isMobile ? 6 : 8,
                             borderWidth: 2,
                             backgroundColor: 'white'
                         }
@@ -2285,8 +2570,8 @@
                             </select>
                         </div>
                         <div class="modal-buttons">
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
                             <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
                         </div>
                     </form>
                 </div>
