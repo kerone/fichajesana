@@ -1,4 +1,3438 @@
-async function importData(event) {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Fichaje</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKVGQkTXyQi8-fC8DaQYPo5QQERl-qS7g",
+            authDomain: "loginfichajes.firebaseapp.com",
+            projectId: "loginfichajes",
+            storageBucket: "loginfichajes.firebasestorage.app",
+            messagingSenderId: "982221953761",
+            appId: "1:982221953761:web:2fc8be647a61fc42c775a0"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Make Firebase available globally
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseProvider = provider;
+        window.firebaseSignInWithPopup = signInWithPopup;
+        window.firebaseSignOut = signOut;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+        window.firebaseDoc = doc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 10px;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 18px 20px;
+            background: #f8fafc;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-bottom: 3px solid transparent;
+            touch-action: manipulation;
+            user-select: none;
+            color: #64748b;
+            position: relative;
+        }
+
+        .tab.active {
+            background: white;
+            border-bottom-color: #334155;
+            color: #334155;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .tab:not(.active):hover {
+            border-bottom-color: #cbd5e1;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            min-height: 70vh;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-card {
+            background: white;
+            color: #334155;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .current-time {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #0f172a;
+        }
+
+        .status {
+            font-size: 16px;
+            color: #64748b;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-items: center;
+        }
+
+        /* Cuando solo hay un botón visible, centrarlo mejor */
+        .buttons-grid:has(.fichar-btn:only-child) {
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .fichar-btn {
+            padding: 20px;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            background: #334155;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 8px rgba(51, 65, 85, 0.15);
+        }
+
+        .fichar-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .fichar-btn:not(:disabled):hover {
+            background: #1e293b;
+            border-color: #1e293b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(51, 65, 85, 0.25);
+        }
+
+        .fichar-btn:not(:disabled):active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(51, 65, 85, 0.15);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group select,
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group select:focus,
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: white;
+            color: #334155;
+        }
+
+        .btn-primary {
+            background: #334155;
+            color: white;
+            border-color: #334155;
+        }
+
+        .btn-primary:hover {
+            background: #1e293b;
+            border-color: #1e293b;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            border-color: #64748b;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            border-color: #475569;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .summary-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .summary-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 5px;
+        }
+
+        .summary-item .label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .summary-item.highlight {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+        }
+
+        .summary-item.highlight .value {
+            color: white;
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .summary-item.highlight .label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 2px;
+            background: white;
+            color: #374151;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+
+        .btn-delete:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .expandable-row {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+            border-radius: 3px;
+            transition: background 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: #e9ecef;
+        }
+
+        .detail-row {
+            display: none;
+        }
+
+        .detail-content {
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+
+        .detail-label {
+            font-weight: 500;
+            color: #555;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .config-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .config-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .import-export {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: #f8fafc;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: #64748b;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        .google-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px 24px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #334155;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .google-login-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .user-details {
+            flex: 1;
+            text-align: left;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+        .user-email {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .logout-btn {
+            background: #64748b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #475569;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(248, 250, 252, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #334155;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .tabs {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: white;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            }
+            
+            .tab {
+                font-size: 15px;
+                padding: 16px 12px;
+                font-weight: 600;
+            }
+            
+            .tab-content {
+                padding: 15px;
+            }
+            
+            .buttons-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                max-width: 100%;
+            }
+            
+            /* Un solo botón en móvil ocupa todo el ancho disponible */
+            .buttons-grid .fichar-btn {
+                width: 100%;
+                max-width: none;
+            }
+            
+            .fichar-btn {
+                padding: 18px;
+                font-size: 15px;
+                min-height: 70px;
+            }
+            
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .summary-item {
+                padding: 12px;
+            }
+            
+            .summary-item .value {
+                font-size: 20px;
+            }
+            
+            .summary-item.highlight .value {
+                font-size: 24px;
+            }
+            
+            .summary-item .label {
+                font-size: 12px;
+            }
+            
+            .modal-content {
+                margin: 5% auto;
+                width: 95%;
+                padding: 20px;
+                max-height: 85vh;
+            }
+            
+            .import-export {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .import-export > div {
+                margin: 0 !important;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .import-export > div > div {
+                margin: 5px !important;
+            }
+            
+            .table-container {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 13px;
+            }
+            
+            .action-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-group input,
+            .form-group select {
+                font-size: 16px; /* Evita zoom automático en iOS */
+            }
+            
+            .status-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .current-time {
+                font-size: 20px;
+            }
+            
+            .status {
+                font-size: 16px;
+            }
+            
+            .summary-title {
+                font-size: 18px;
+                margin-bottom: 12px;
+            }
+            
+            #mesResumen {
+                width: 100%;
+                margin-top: 10px;
+            }
+            
+            /* Optimización para S24 Ultra específicamente */
+            @media (min-width: 400px) and (max-width: 768px) {
+                .summary-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+                
+                .buttons-grid {
+                    grid-template-columns: 1fr;
+                    max-width: 500px;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+                
+                .buttons-grid .fichar-btn {
+                    max-width: 100%;
+                }
+                
+                .fichar-btn {
+                    font-size: 14px;
+                    min-height: 75px;
+                }
+                
+                .import-export {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                
+                .tab-content {
+                    padding: 20px;
+                }
+                
+                th, td {
+                    font-size: 14px;
+                    padding: 10px 8px;
+                }
+            }
+            
+            /* Mejor visualización del gráfico en móvil */
+            .summary-card canvas {
+                height: 350px !important;
+            }
+            
+            /* Para S24 Ultra específicamente, más altura */
+            @media (min-width: 400px) and (max-width: 768px) {
+                .summary-card canvas {
+                    height: 400px !important;
+                }
+                
+                .summary-card:has(canvas) {
+                    margin-bottom: 25px;
+                }
+                
+                .summary-card:has(canvas) > div {
+                    height: 420px !important;
+                    margin-bottom: 25px !important;
+                }
+            }
+            
+            /* Mejoras para formularios en móvil */
+            .modal-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn {
+                width: 100%;
+                padding: 14px;
+                font-size: 16px;
+            }
+            
+            /* Scroll suave en tablas */
+            .table-container {
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+            }
+            
+            /* Indicador visual para filas expandibles */
+            .expand-btn {
+                font-size: 18px;
+                padding: 8px;
+                min-width: 40px;
+                background: #f8f9fa;
+                border-radius: 6px;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .detail-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+            }
+            
+            .detail-label {
+                font-size: 12px;
+                margin-bottom: 4px;
+                color: #666;
+            }
+            
+            .detail-value {
+                font-size: 14px;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Login screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">📋 Dashboard de Fichaje</h1>
+            <p class="login-subtitle">Inicia sesión con tu cuenta de Google para acceder a tus datos</p>
+            <button id="googleLoginBtn" class="google-login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continuar con Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main app (hidden initially) -->
+    <div id="mainApp" class="container" style="display: none;">
+        <!-- User info bar -->
+        <div id="userInfo" class="user-info">
+            <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+            <div class="user-details">
+                <div id="userName" class="user-name"></div>
+                <div id="userEmail" class="user-email"></div>
+            </div>
+            <button id="logoutBtn" class="logout-btn">Cerrar sesión</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('fichaje')">Fichaje</button>
+            <button class="tab" onclick="showTab('registro')">Registro</button>
+            <button class="tab" onclick="showTab('configuracion')">Configuración</button>
+        </div>
+
+        <!-- Pestaña de Fichaje -->
+        <div id="fichaje" class="tab-content active">
+            <div class="status-card">
+                <div class="current-time" id="currentTime"></div>
+                <div class="status" id="currentStatus">Listo para fichar entrada</div>
+            </div>
+
+            <div class="buttons-grid">
+                <button class="fichar-btn btn-entrada" id="btnEntrada" onclick="openModal('entrada')">
+                    🟢 FICHAJE DE ENTRADA
+                </button>
+                <button class="fichar-btn btn-salida-comer" id="btnSalidaComer" onclick="openModal('salidaComer')" disabled>
+                    🍽️ SALIDA PARA COMER
+                </button>
+                <button class="fichar-btn btn-vuelta-comer" id="btnVueltaComer" onclick="openModal('vueltaComer')" disabled>
+                    🔙 VUELTA DE COMER
+                </button>
+                <button class="fichar-btn btn-fin-jornada" id="btnFinJornada" onclick="openModal('finJornada')" disabled>
+                    🌙 FIN DE JORNADA
+                </button>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-title">
+                    Resumen Mensual
+                    <div style="margin-top: 10px;">
+                        <select id="mesResumen" onchange="updateSummary()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; background: white;">
+                            <!-- Se llena dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+                <div class="summary-grid" id="summaryGrid">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-title">📈 Evolución Mensual</div>
+                <div style="position: relative; height: 400px; margin-bottom: 20px;" id="chartContainer">
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pestaña de Registro -->
+        <div id="registro" class="tab-content">
+            <div class="import-export">
+                <button class="btn btn-primary" onclick="exportData()">📤 Exportar JSON</button>
+                <button class="btn btn-primary" onclick="exportToCSV()">📊 Exportar para Google Sheets</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importar Datos</button>
+                <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(event)">
+                
+                <div style="margin-left: auto; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="fechaInicio" style="font-weight: 500; color: #555; white-space: nowrap;">Desde:</label>
+                        <input type="date" id="fechaInicio" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="fechaFin" style="font-weight: 500; color: #555; white-space: nowrap;">Hasta:</label>
+                        <input type="date" id="fechaFin" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="filtroTipo" style="font-weight: 500; color: #555; white-space: nowrap;">Tipo:</label>
+                        <select id="filtroTipo" onchange="updateRegistroTable()" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px;">
+                            <option value="todos">Todos</option>
+                            <option value="L-V">L-V</option>
+                            <option value="sabado-manana">Sáb Mañana</option>
+                            <option value="sabado-tarde">Sáb Tarde</option>
+                            <option value="S-D-F">Domingo</option>
+                            <option value="festivo">Festivos</option>
+                            <option value="nacional">Nacional</option>
+                            <option value="internacional">Internacional</option>
+                            <option value="taller">Taller</option>
+                            <option value="cliente">Cliente</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="limpiarFiltros()" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; white-space: nowrap;">
+                        🔄 Limpiar
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table id="registroTable">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Ubicación</th>
+                            <th>Entrada</th>
+                            <th>Fin Jornada</th>
+                            <th>Horas Total</th>
+                            <th>Horas Extra</th>
+                            <th>Importe</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registroBody">
+                        <!-- Se llena dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pestaña de Configuración -->
+        <div id="configuracion" class="tab-content">
+            <div class="config-section">
+                <div class="config-title">⏰ Horario Nocturno</div>
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label>Hora Inicio</label>
+                        <input type="time" id="horaInicioNocturno" value="22:00">
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Fin</label>
+                        <input type="time" id="horaFinNocturno" value="06:00">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-title">🇪🇸 Precios Nacional</div>
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label>Comida (€)</label>
+                        <input type="number" id="precioComida" value="13" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Cena (€)</label>
+                        <input type="number" id="precioCena" value="15" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Pernocta L-V (€)</label>
+                        <input type="number" id="pernoctaLV" value="13" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Pernocta S-D-F (€)</label>
+                        <input type="number" id="pernoctaSDF" value="17" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Sin Pernocta L-V (€)</label>
+                        <input type="number" id="sinPernoctaLV" value="7" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Sin Pernocta S-D-F (€)</label>
+                        <input type="number" id="sinPernoctaSDF" value="10" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-title">🌍 Precios Internacional</div>
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label>Dieta L-V (€)</label>
+                        <input type="number" id="dietaInternacionalLV" value="26" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Dieta S-D-F (€)</label>
+                        <input type="number" id="dietaInternacionalSDF" value="30" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Pernocta Internacional L-V (€)</label>
+                        <input type="number" id="pernoctaInternacionalLV" value="20" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Pernocta Internacional S-D-F (€)</label>
+                        <input type="number" id="pernoctaInternacionalSDF" value="25" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-title">⏱️ Horas Extra</div>
+                <div class="config-grid">
+                    <div class="form-group">
+                        <label>Extra Taller (€/h)</label>
+                        <input type="number" id="extraTaller" value="22.23" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Extra Cliente (€/h)</label>
+                        <input type="number" id="extraCliente" value="23.82" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Extra Sábado ≥13:00, Dom, Fest (€/h)</label>
+                        <input type="number" id="extraEspecial" value="27.79" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Extra Internacional (€/h)</label>
+                        <input type="number" id="extraInternacional" value="22.23" step="0.01">
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveConfig()">💾 Guardar Configuración</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="modalEntrada" class="modal">
+        <div class="modal-content">
+            <h3>🟢 Fichaje de Entrada</h3>
+            <form id="formEntrada">
+                <div class="form-group">
+                    <label>Tipo de Servicio</label>
+                    <select id="tipoServicio" onchange="toggleUbicacion()">
+                        <option value="nacional">Nacional</option>
+                        <option value="internacional">Internacional</option>
+                    </select>
+                </div>
+                <div class="form-group" id="ubicacionGroup">
+                    <label>Ubicación</label>
+                    <select id="ubicacion">
+                        <option value="taller">Taller</option>
+                        <option value="cliente">Cliente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>¿Es día festivo?</label>
+                    <select id="esFestivo">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Entrada</label>
+                    <select id="tipoEntrada">
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                        <option value="puntual">Puntual (sin redondeo)</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Fichar Entrada</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalSalidaComer" class="modal">
+    <div class="modal-content">
+        <h3>🍽️ Salida para Comer</h3>
+        <form id="formSalidaComer">
+            <div class="form-group" id="comidaGroup">
+                <label>¿Comida fuera?</label>
+                <select id="seHaComido">
+                    <option value="no">No</option>
+                    <option value="si">Sí</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Salida para Comer</label>
+                <select id="tipoSalidaComer">
+                    <option value="puntual">Puntual (sin redondeo)</option>
+                    <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                    <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn btn-primary">Fichar Salida</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <div id="modalVueltaComer" class="modal">
+    <div class="modal-content">
+        <h3>🔙 Vuelta de Comer</h3>
+        <form id="formVueltaComer">
+            <div class="form-group">
+                <label>Tipo de Vuelta de Comer</label>
+                <select id="tipoVueltaComer">
+                    <option value="puntual">Puntual (sin redondeo)</option>
+                    <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                    <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button type="submit" class="btn btn-primary">Confirmar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    <div id="modalFinJornada" class="modal">
+        <div class="modal-content">
+            <h3>🌙 Fin de Jornada</h3>
+            <form id="formFinJornada">
+                <div class="form-group" id="cenaGroup">
+                    <label>¿Cena fuera?</label>
+                    <select id="seHaCenado">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group" id="pernoctaGroup">
+                    <label>¿Hay pernocta?</label>
+                    <select id="hayPernocta">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Fin de Jornada</label>
+                    <select id="tipoFinJornada">
+                        
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="puntual">Puntual (sin redondeo)</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Finalizar Jornada</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentSession = null;
+        let allSessions = [];
+        let config = {};
+        let evolutionChart = null;
+        let currentUser = null;
+        let unsubscribeFirestore = null;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Firebase to load
+            setTimeout(initializeAuth, 500);
+        });
+
+        // Firebase Authentication
+        function initializeAuth() {
+            const loginScreen = document.getElementById('loginScreen');
+            const mainApp = document.getElementById('mainApp');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const googleLoginBtn = document.getElementById('googleLoginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            // Show loading
+            loadingOverlay.style.display = 'flex';
+
+            // Auth state observer
+            window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
+                loadingOverlay.style.display = 'none';
+                
+                if (user) {
+                    // User is signed in
+                    currentUser = user;
+                    showMainApp(user);
+                    loadUserData();
+                } else {
+                    // User is signed out
+                    currentUser = null;
+                    showLoginScreen();
+                }
+            });
+
+            // Google login
+            googleLoginBtn.addEventListener('click', async () => {
+                try {
+                    loadingOverlay.style.display = 'flex';
+                    await window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseProvider);
+                } catch (error) {
+                    console.error('Error signing in:', error);
+                    alert('Error al iniciar sesión: ' + error.message);
+                    loadingOverlay.style.display = 'none';
+                }
+            });
+
+            // Logout
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    if (unsubscribeFirestore) {
+                        unsubscribeFirestore();
+                    }
+                    await window.firebaseSignOut(window.firebaseAuth);
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                }
+            });
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+        }
+
+        function showMainApp(user) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            
+            // Update user info
+            document.getElementById('userName').textContent = user.displayName;
+            document.getElementById('userEmail').textContent = user.email;
+            document.getElementById('userAvatar').src = user.photoURL;
+            
+            // Initialize main app
+            initializeMainApp();
+        }
+
+        function initializeMainApp() {
+            loadConfig();
+            updateClock();
+            updateButtonsState();
+            updateSummary();
+            updateEvolutionChart();
+            updateRegistroTable();
+            setInterval(updateClock, 1000);
+        }
+
+        // Firebase Firestore functions
+        async function loadUserData() {
+            if (!currentUser) return;
+            
+            try {
+                // Load sessions
+                const sessionsRef = window.firebaseCollection(window.firebaseDb, 'users', currentUser.uid, 'sessions');
+                unsubscribeFirestore = window.firebaseOnSnapshot(sessionsRef, (querySnapshot) => {
+                    allSessions = [];
+                    querySnapshot.forEach((doc) => {
+                        allSessions.push({ id: doc.id, ...doc.data() });
+                    });
+                    updateSummary();
+                    updateEvolutionChart();
+                    updateRegistroTable();
+                });
+
+                // Load config
+                const configDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'settings'));
+                if (configDoc.exists()) {
+                    config = configDoc.data();
+                    loadConfigToUI();
+                }
+
+                // Load current session
+                const currentSessionDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession'));
+                if (currentSessionDoc.exists()) {
+                    currentSession = currentSessionDoc.data();
+                }
+                
+                updateButtonsState();
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        async function saveSessionToFirebase(session) {
+            if (!currentUser) return;
+            
+            try {
+                await window.firebaseSetDoc(
+                    window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'sessions', session.id.toString()),
+                    session
+                );
+            } catch (error) {
+                console.error('Error saving session:', error);
+                alert('Error al guardar el fichaje');
+            }
+        }
+
+        async function saveCurrentSessionToFirebase() {
+            if (!currentUser) return;
+            
+            try {
+                if (currentSession) {
+                    await window.firebaseSetDoc(
+                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession'),
+                        currentSession
+                    );
+                } else {
+                    await window.firebaseDeleteDoc(
+                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession')
+                    );
+                }
+            } catch (error) {
+                console.error('Error saving current session:', error);
+            }
+        }
+
+        async function saveConfigToFirebase() {
+            if (!currentUser) return;
+            
+            try {
+                await window.firebaseSetDoc(
+                    window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'settings'),
+                    config
+                );
+            } catch (error) {
+                console.error('Error saving config:', error);
+                alert('Error al guardar la configuración');
+            }
+        }
+
+        function loadConfigToUI() {
+            Object.keys(config).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = config[key];
+                }
+            });
+        }
+
+        // Funciones de tiempo
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('es-ES');
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatDate(date) {
+            return date.toLocaleDateString('es-ES');
+        }
+
+        // Función para convertir horas decimales a formato h m
+        function formatHours(hours) {
+            const totalMinutes = Math.round(hours * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return `${h}h ${m}m`;
+        }
+
+        // Gestión de pestañas
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+            
+            if (tabName === 'registro') {
+                updateRegistroTable();
+            }
+        }
+
+        // Gestión de modales
+        function openModal(tipo) {
+            const modal = document.getElementById('modal' + tipo.charAt(0).toUpperCase() + tipo.slice(1));
+            modal.style.display = 'block';
+            
+            // Configurar visibilidad de campos según el tipo de servicio actual
+            if (tipo === 'salidaComer') {
+                // Resetear visibilidad por defecto
+                document.getElementById('comidaGroup').style.display = 'block';
+                
+                // Ocultar solo si es internacional
+                if (currentSession && currentSession.tipoServicio === 'internacional') {
+                    document.getElementById('comidaGroup').style.display = 'none';
+                }
+            }
+            
+            if (tipo === 'finJornada') {
+                // Resetear visibilidad por defecto
+                document.getElementById('cenaGroup').style.display = 'block';
+                document.getElementById('pernoctaGroup').style.display = 'block';
+                
+                if (currentSession) {
+                    if (currentSession.tipoServicio === 'internacional') {
+                        // Para internacional: no preguntar por cena (dieta incluye todo), pero SÍ preguntar por pernocta
+                        document.getElementById('cenaGroup').style.display = 'none';
+                        document.getElementById('pernoctaGroup').style.display = 'block';
+                    } else if (currentSession.ubicacion === 'taller') {
+                        // Si es taller nacional, mostrar cena pero NO pernocta
+                        document.getElementById('cenaGroup').style.display = 'block';
+                        document.getElementById('pernoctaGroup').style.display = 'none';
+                    } else {
+                        // Si es cliente nacional, mostrar ambas preguntas
+                        document.getElementById('cenaGroup').style.display = 'block';
+                        document.getElementById('pernoctaGroup').style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        function closeModal() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        function toggleUbicacion() {
+            const tipoServicio = document.getElementById('tipoServicio').value;
+            const ubicacionGroup = document.getElementById('ubicacionGroup');
+            ubicacionGroup.style.display = tipoServicio === 'nacional' ? 'block' : 'none';
+        }
+
+        // Funciones de fichaje
+        function updateButtonsState() {
+            const btnEntrada = document.getElementById('btnEntrada');
+            const btnSalidaComer = document.getElementById('btnSalidaComer');
+            const btnVueltaComer = document.getElementById('btnVueltaComer');
+            const btnFinJornada = document.getElementById('btnFinJornada');
+            const status = document.getElementById('currentStatus');
+
+            // Ocultar todos los botones primero
+            btnEntrada.style.display = 'none';
+            btnSalidaComer.style.display = 'none';
+            btnVueltaComer.style.display = 'none';
+            btnFinJornada.style.display = 'none';
+
+            if (!currentSession) {
+                // Solo mostrar botón de entrada
+                btnEntrada.style.display = 'flex';
+                btnEntrada.disabled = false;
+                status.textContent = "Listo para fichar entrada";
+            } else {
+                if (!currentSession.salidaComer) {
+                    // Mostrar solo botón de salida para comer
+                    btnSalidaComer.style.display = 'flex';
+                    btnSalidaComer.disabled = false;
+                    status.textContent = "Trabajando - Siguiente: Salida para comer";
+                } else if (!currentSession.vueltaComer) {
+                    // Mostrar solo botón de vuelta de comer
+                    btnVueltaComer.style.display = 'flex';
+                    btnVueltaComer.disabled = false;
+                    status.textContent = "En pausa para comer - Siguiente: Vuelta de comer";
+                } else if (!currentSession.finJornada) {
+                    // Mostrar solo botón de fin de jornada
+                    btnFinJornada.style.display = 'flex';
+                    btnFinJornada.disabled = false;
+                    status.textContent = "Trabajando - Siguiente: Fin de jornada";
+                }
+            }
+        }
+
+        // Event listeners para formularios
+        document.getElementById('formEntrada').addEventListener('submit', function(e) {
+            e.preventDefault();
+            ficharEntrada();
+        });
+
+        document.getElementById('formSalidaComer').addEventListener('submit', function(e) {
+            e.preventDefault();
+            ficharSalidaComer();
+        });
+
+        document.getElementById('formFinJornada').addEventListener('submit', function(e) {
+            e.preventDefault();
+            ficharFinJornada();
+        });
+        document.getElementById('formVueltaComer').addEventListener('submit', function(e) {
+    e.preventDefault();
+    ficharVueltaComer();
+});
+
+        function ficharEntrada() {
+            const now = new Date();
+            const tipoServicio = document.getElementById('tipoServicio').value;
+            const ubicacion = tipoServicio === 'nacional' ? document.getElementById('ubicacion').value : null;
+            const esFestivo = document.getElementById('esFestivo').value === 'si';
+            const tipoEntrada = document.getElementById('tipoEntrada').value;
+            
+            // Calcular la hora de entrada con redondeo si es necesario
+            let horaEntrada = now;
+            if (tipoEntrada !== 'puntual') {
+                horaEntrada = redondearHoraPorCuartos(now, tipoEntrada);
+            }
+            
+            currentSession = {
+                id: Date.now(),
+                fecha: formatDate(now),
+                tipoServicio: tipoServicio,
+                ubicacion: ubicacion,
+                esFestivo: esFestivo,
+                entrada: formatTime(horaEntrada),
+                entradaOriginal: formatTime(now), // Guardamos la hora original
+                tipoEntrada: tipoEntrada,
+                salidaComer: null,
+                vueltaComer: null,
+                finJornada: null,
+                seHaComido: null,
+                seHaCenado: null,
+                hayPernocta: null,
+                dia: getDayType(now, esFestivo),
+                horasTrabajadas: 0,
+                horasExtra: 0,
+                horasNocturnas: 0,
+                importeTotal: 0
+            };
+            
+            saveCurrentSession();
+            updateButtonsState();
+            closeModal();
+        }
+
+        function ficharSalidaComer() {
+    const now = new Date();
+    const seHaComido = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaComido').value : 'no';
+    const tipoSalidaComer = document.getElementById('tipoSalidaComer').value;
+    
+    // Calcular la hora de salida con redondeo si es necesario
+    let horaSalida = now;
+    if (tipoSalidaComer !== 'puntual') {
+        horaSalida = redondearHoraPorCuartos(now, tipoSalidaComer);
+    }
+    
+    currentSession.salidaComer = formatTime(horaSalida);
+    currentSession.salidaComerOriginal = formatTime(now);
+    currentSession.tipoSalidaComer = tipoSalidaComer;
+    currentSession.seHaComido = seHaComido;
+    
+    saveCurrentSession();
+    updateButtonsState();
+    closeModal();
+}
+
+        function ficharVueltaComer() {
+    const now = new Date();
+    const tipoVueltaComer = document.getElementById('tipoVueltaComer').value;
+    
+    // Calcular la hora de vuelta con redondeo si es necesario
+    let horaVuelta = now;
+    if (tipoVueltaComer !== 'puntual') {
+        horaVuelta = redondearHoraPorCuartos(now, tipoVueltaComer);
+    }
+    
+    currentSession.vueltaComer = formatTime(horaVuelta);
+    currentSession.vueltaComerOriginal = formatTime(now);
+    currentSession.tipoVueltaComer = tipoVueltaComer;
+    
+    saveCurrentSession();
+    updateButtonsState();
+    closeModal();
+}
+
+        async function ficharFinJornada() {
+            const now = new Date();
+            const tipoFinJornada = document.getElementById('tipoFinJornada').value;
+            let seHaCenado = 'no';
+            let hayPernocta = 'no';
+            
+            if (currentSession.tipoServicio === 'nacional') {
+                seHaCenado = document.getElementById('seHaCenado').value;
+                // Solo preguntar por pernocta si es nacional Y cliente
+                if (currentSession.ubicacion === 'cliente') {
+                    hayPernocta = document.getElementById('hayPernocta').value;
+                }
+            } else {
+                // Para internacional: no hay pregunta de cena (dieta incluye todo), pero SÍ hay pernocta
+                seHaCenado = 'no'; // La dieta internacional incluye todas las comidas
+                hayPernocta = document.getElementById('hayPernocta').value;
+            }
+            
+            // Calcular la hora de fin con redondeo si es necesario
+            let horaFin = now;
+            if (tipoFinJornada !== 'puntual') {
+                horaFin = redondearHoraPorCuartos(now, tipoFinJornada);
+            }
+            
+            currentSession.finJornada = formatTime(horaFin);
+            currentSession.finJornadaOriginal = formatTime(now);
+            currentSession.tipoFinJornada = tipoFinJornada;
+            currentSession.seHaCenado = seHaCenado;
+            currentSession.hayPernocta = hayPernocta;
+            
+            // Calcular horas trabajadas y extras
+            calculateHours();
+            calculateAmount();
+            
+            // Guardar sesión completa en Firebase
+            await saveSessionToFirebase(currentSession);
+            currentSession = null;
+            
+            saveSessions();
+            updateButtonsState();
+            updateSummary();
+            updateEvolutionChart();
+            closeModal();
+        }
+
+        function getDayType(date, esFestivo = false) {
+            const day = date.getDay();
+            const hour = date.getHours();
+            
+            // Si es festivo, siempre es S-D-F independientemente del día de la semana
+            if (esFestivo) return 'S-D-F';
+            
+            if (day >= 1 && day <= 5) return 'L-V';
+            if (day === 6) return hour < 13 ? 'sabado-manana' : 'sabado-tarde';
+            return 'S-D-F';
+        }
+
+        function redondearHoraPorCuartos(fecha, tipoEntrada) {
+            const nuevaFecha = new Date(fecha);
+            const minutos = nuevaFecha.getMinutes();
+            
+            // Determinar a qué cuarto de hora corresponde
+            let cuartoActual;
+            if (minutos < 15) cuartoActual = 0;
+            else if (minutos < 30) cuartoActual = 15;
+            else if (minutos < 45) cuartoActual = 30;
+            else cuartoActual = 45;
+            
+            if (tipoEntrada === 'temprano') {
+                // Redondear hacia arriba
+                if (minutos === cuartoActual) {
+                    // Ya está en un cuarto exacto, no redondear
+                    return nuevaFecha;
+                } else {
+                    // Redondear al siguiente cuarto
+                    let siguienteCuarto = cuartoActual + 15;
+                    if (siguienteCuarto >= 60) {
+                        nuevaFecha.setHours(nuevaFecha.getHours() + 1);
+                        nuevaFecha.setMinutes(0);
+                    } else {
+                        nuevaFecha.setMinutes(siguienteCuarto);
+                    }
+                }
+            } else if (tipoEntrada === 'tarde') {
+                // Redondear hacia abajo
+                if (minutos === cuartoActual) {
+                    // Ya está en un cuarto exacto, no redondear
+                    return nuevaFecha;
+                } else {
+                    // Redondear al cuarto actual (hacia abajo)
+                    nuevaFecha.setMinutes(cuartoActual);
+                }
+            }
+            
+            // Establecer segundos a 0
+            nuevaFecha.setSeconds(0);
+            nuevaFecha.setMilliseconds(0);
+            
+            return nuevaFecha;
+        }
+
+        function calculateHours() {
+            const entrada = parseTime(currentSession.entrada);
+            let salidaComer = null;
+            let vueltaComer = null;
+            let finJornada = null;
+            
+            // Calcular tiempos relativos a la entrada para manejar cruce de medianoche
+            if (currentSession.salidaComer) {
+                salidaComer = parseTimeForCalculation(currentSession.salidaComer, entrada);
+            }
+            if (currentSession.vueltaComer) {
+                vueltaComer = parseTimeForCalculation(currentSession.vueltaComer, salidaComer || entrada);
+            }
+            finJornada = parseTimeForCalculation(currentSession.finJornada, vueltaComer || salidaComer || entrada);
+            
+            let horasTrabajadas = 0;
+            let horasNocturnas = 0;
+            
+            // Calcular horas de la mañana (hasta salida a comer)
+            if (salidaComer) {
+                const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
+                horasTrabajadas += horasManana;
+                horasNocturnas += calculateNightHours(entrada, salidaComer);
+            }
+            
+            // Calcular horas de la tarde (desde vuelta de comer hasta fin)
+            if (vueltaComer) {
+                const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
+                horasTrabajadas += horasTarde;
+                horasNocturnas += calculateNightHours(vueltaComer, finJornada);
+            } else if (!salidaComer) {
+                // Jornada sin pausa para comer (continua)
+                const horasTotal = (finJornada - entrada) / (1000 * 60 * 60);
+                horasTrabajadas += horasTotal;
+                horasNocturnas += calculateNightHours(entrada, finJornada);
+            }
+            
+            currentSession.horasTrabajadas = Math.round(horasTrabajadas * 100) / 100;
+            currentSession.horasNocturnas = Math.round(horasNocturnas * 100) / 100;
+            
+            // Calcular horas extra según las reglas
+            calculateExtraHours();
+        }
+
+        function parseTime(timeStr) {
+            const today = new Date();
+            const [hours, minutes] = timeStr.split(':');
+            return new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(hours), parseInt(minutes));
+        }
+
+        function parseTimeForCalculation(timeStr, referenceTime) {
+            const [hours, minutes] = timeStr.split(':');
+            const parsedTime = new Date(referenceTime.getFullYear(), referenceTime.getMonth(), referenceTime.getDate(), parseInt(hours), parseInt(minutes));
+            
+            // Si la hora es menor que la hora de referencia, asumimos que es del día siguiente
+            if (parsedTime < referenceTime) {
+                parsedTime.setDate(parsedTime.getDate() + 1);
+            }
+            
+            return parsedTime;
+        }
+
+        function calculateNightHours(start, end) {
+            const [nightStartHour, nightStartMin] = (config.horaInicioNocturno || '22:00').split(':').map(Number);
+            const [nightEndHour, nightEndMin] = (config.horaFinNocturno || '06:00').split(':').map(Number);
+            
+            let nightHours = 0;
+            let current = new Date(start);
+            const endTime = new Date(end);
+            
+            while (current < endTime) {
+                const currentHour = current.getHours();
+                const currentMin = current.getMinutes();
+                const currentTimeInMin = currentHour * 60 + currentMin;
+                
+                const nightStartInMin = nightStartHour * 60 + nightStartMin;
+                const nightEndInMin = nightEndHour * 60 + nightEndMin;
+                
+                let isNight = false;
+                
+                if (nightStartInMin > nightEndInMin) {
+                    // Horario nocturno cruza medianoche (ej: 22:00 - 06:00)
+                    isNight = currentTimeInMin >= nightStartInMin || currentTimeInMin < nightEndInMin;
+                } else {
+                    // Horario nocturno no cruza medianoche
+                    isNight = currentTimeInMin >= nightStartInMin && currentTimeInMin < nightEndInMin;
+                }
+                
+                if (isNight) {
+                    nightHours += 1/60; // 1 minuto
+                }
+                current.setMinutes(current.getMinutes() + 1);
+            }
+            
+            return nightHours;
+        }
+
+        function calculateExtraHours() {
+            const dia = currentSession.dia;
+            const horasTrabajadas = currentSession.horasTrabajadas;
+            let horasExtra = 0;
+            
+            if (currentSession.tipoServicio === 'nacional') {
+                if (dia === 'L-V') {
+                    horasExtra = Math.max(0, horasTrabajadas - 8.25); // 8h 15min
+                } else {
+                    horasExtra = horasTrabajadas; // Sábados, domingos y festivos
+                }
+            } else { // Internacional
+                if (dia === 'L-V') {
+                    horasExtra = Math.max(0, horasTrabajadas - 8.25);
+                } else {
+                    horasExtra = horasTrabajadas;
+                }
+            }
+            
+            currentSession.horasExtra = Math.round(horasExtra * 100) / 100;
+        }
+
+        function calculateAmount() {
+            let total = 0;
+            
+            if (currentSession.tipoServicio === 'nacional') {
+                // Complementos de comida y cena
+                if (currentSession.seHaComido === 'si') {
+                    total += parseFloat(config.precioComida || 13);
+                }
+                if (currentSession.seHaCenado === 'si') {
+                    total += parseFloat(config.precioCena || 15);
+                }
+                
+                // Complementos de pernocta - SOLO para ubicación CLIENTE
+                if (currentSession.ubicacion === 'cliente') {
+                    if (currentSession.hayPernocta === 'si') {
+                        if (currentSession.dia === 'L-V') {
+                            total += parseFloat(config.pernoctaLV || 13);
+                        } else {
+                            total += parseFloat(config.pernoctaSDF || 17);
+                        }
+                    } else {
+                        if (currentSession.dia === 'L-V') {
+                            total += parseFloat(config.sinPernoctaLV || 7);
+                        } else {
+                            total += parseFloat(config.sinPernoctaSDF || 10);
+                        }
+                    }
+                }
+                
+                // Horas extra - Lógica mejorada para sábados
+                if (currentSession.horasExtra > 0) {
+                    if (currentSession.dia === 'S-D-F') {
+                        // Domingo o festivo - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-tarde') {
+                        // Sábado tarde (≥13:00) - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-manana') {
+                        // Sábado mañana (<13:00) - separar horas antes y después de las 13:00
+                        const { horasNormales, horasEspeciales } = calculateSaturdayHours();
+                        
+                        let tarifaExtraNormal;
+                        if (currentSession.ubicacion === 'taller') {
+                            tarifaExtraNormal = parseFloat(config.extraTaller || 22.23);
+                        } else {
+                            tarifaExtraNormal = parseFloat(config.extraCliente || 23.82);
+                        }
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        
+                        total += horasNormales * tarifaExtraNormal;
+                        total += horasEspeciales * tarifaExtraEspecial;
+                        
+                        // Guardar desglose
+                        currentSession.horasExtraNormales = horasNormales;
+                        currentSession.horasExtraEspeciales = horasEspeciales;
+                        currentSession.importeExtraNormales = horasNormales * tarifaExtraNormal;
+                        currentSession.importeExtraEspeciales = horasEspeciales * tarifaExtraEspecial;
+                    } else {
+                        // Día L-V - separar horas extra normales de nocturnas
+                        let tarifaExtraNormal;
+                        if (currentSession.ubicacion === 'taller') {
+                            tarifaExtraNormal = parseFloat(config.extraTaller || 22.23);
+                        } else {
+                            tarifaExtraNormal = parseFloat(config.extraCliente || 23.82);
+                        }
+                        
+                        // Calcular cuántas de las horas extra son nocturnas
+                        const horasExtraNocturnas = Math.min(currentSession.horasNocturnas, currentSession.horasExtra);
+                        const horasExtraNormales = currentSession.horasExtra - horasExtraNocturnas;
+                        
+                        // Aplicar tarifas
+                        total += horasExtraNormales * tarifaExtraNormal;
+                        
+                        // Las horas nocturnas tienen tarifa especial
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += horasExtraNocturnas * tarifaExtraEspecial;
+                        
+                        // Guardar el desglose para el resumen
+                        currentSession.horasExtraNormales = horasExtraNormales;
+                        currentSession.horasExtraNocturnas = horasExtraNocturnas;
+                        currentSession.importeExtraNormales = horasExtraNormales * tarifaExtraNormal;
+                        currentSession.importeExtraNocturnas = horasExtraNocturnas * tarifaExtraEspecial;
+                    }
+                }
+            } else { // Internacional
+                // Dieta automática
+                if (currentSession.dia === 'L-V') {
+                    total += parseFloat(config.dietaInternacionalLV || 26);
+                } else {
+                    total += parseFloat(config.dietaInternacionalSDF || 30);
+                }
+                
+                // Complemento de pernocta internacional
+                if (currentSession.hayPernocta === 'si') {
+                    if (currentSession.dia === 'L-V') {
+                        total += parseFloat(config.pernoctaInternacionalLV || 20);
+                    } else {
+                        total += parseFloat(config.pernoctaInternacionalSDF || 25);
+                    }
+                }
+                
+                // Horas extra internacionales - Lógica mejorada para sábados
+                if (currentSession.horasExtra > 0) {
+                    if (currentSession.dia === 'S-D-F') {
+                        // Domingo o festivo - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-tarde') {
+                        // Sábado tarde (≥13:00) - todas las horas son especiales
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        total += currentSession.horasExtra * tarifaExtraEspecial;
+                    } else if (currentSession.dia === 'sabado-manana') {
+                        // Sábado mañana (<13:00) - separar horas antes y después de las 13:00
+                        const { horasNormales, horasEspeciales } = calculateSaturdayHours();
+                        
+                        const tarifaExtraNormal = parseFloat(config.extraInternacional || 22.23);
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        
+                        total += horasNormales * tarifaExtraNormal;
+                        total += horasEspeciales * tarifaExtraEspecial;
+                        
+                        // Guardar desglose
+                        currentSession.horasExtraNormales = horasNormales;
+                        currentSession.horasExtraEspeciales = horasEspeciales;
+                        currentSession.importeExtraNormales = horasNormales * tarifaExtraNormal;
+                        currentSession.importeExtraEspeciales = horasEspeciales * tarifaExtraEspecial;
+                    } else {
+                        // Día L-V o sábado mañana - separar horas extra normales de nocturnas
+                        const tarifaExtraNormal = parseFloat(config.extraInternacional || 22.23);
+                        const tarifaExtraEspecial = parseFloat(config.extraEspecial || 27.79);
+                        
+                        // Calcular cuántas de las horas extra son nocturnas
+                        const horasExtraNocturnas = Math.min(currentSession.horasNocturnas, currentSession.horasExtra);
+                        const horasExtraNormales = currentSession.horasExtra - horasExtraNocturnas;
+                        
+                        // Aplicar tarifas
+                        total += horasExtraNormales * tarifaExtraNormal;
+                        total += horasExtraNocturnas * tarifaExtraEspecial;
+                        
+                        // Guardar el desglose para el resumen (igual que nacional)
+                        currentSession.horasExtraNormales = horasExtraNormales;
+                        currentSession.horasExtraNocturnas = horasExtraNocturnas;
+                        currentSession.importeExtraNormales = horasExtraNormales * tarifaExtraNormal;
+                        currentSession.importeExtraNocturnas = horasExtraNocturnas * tarifaExtraEspecial;
+                    }
+                }
+            }
+            
+            currentSession.importeTotal = Math.round(total * 100) / 100;
+        }
+
+        // Nueva función para calcular horas de sábado correctamente
+        function calculateSaturdayHours() {
+            if (currentSession.dia !== 'sabado-manana') {
+                return { horasNormales: 0, horasEspeciales: currentSession.horasExtra };
+            }
+
+            const entrada = parseTime(currentSession.entrada);
+            let salidaComer = null;
+            let vueltaComer = null;
+            let finJornada = null;
+            
+            if (currentSession.salidaComer) {
+                salidaComer = parseTimeForCalculation(currentSession.salidaComer, entrada);
+            }
+            if (currentSession.vueltaComer) {
+                vueltaComer = parseTimeForCalculation(currentSession.vueltaComer, salidaComer || entrada);
+            }
+            finJornada = parseTimeForCalculation(currentSession.finJornada, vueltaComer || salidaComer || entrada);
+            
+            // Crear fecha base para las 13:00 del mismo día
+            const limite13h = new Date(entrada);
+            limite13h.setHours(13, 0, 0, 0);
+            
+            let horasAntes13 = 0;
+            let horasDespues13 = 0;
+            
+            // Calcular horas de mañana (hasta salida a comer o 13:00)
+            if (salidaComer) {
+                const finMañana = salidaComer < limite13h ? salidaComer : limite13h;
+                if (finMañana > entrada) {
+                    horasAntes13 += (finMañana - entrada) / (1000 * 60 * 60);
+                }
+                if (salidaComer > limite13h) {
+                    horasDespues13 += (salidaComer - limite13h) / (1000 * 60 * 60);
+                }
+            }
+            
+            // Calcular horas de tarde (desde vuelta de comer hasta fin)
+            if (vueltaComer) {
+                const inicioTarde = vueltaComer > limite13h ? vueltaComer : limite13h;
+                if (finJornada > inicioTarde) {
+                    if (inicioTarde >= limite13h) {
+                        horasDespues13 += (finJornada - inicioTarde) / (1000 * 60 * 60);
+                    } else {
+                        // Si vuelta de comer es antes de las 13:00
+                        if (finJornada <= limite13h) {
+                            horasAntes13 += (finJornada - vueltaComer) / (1000 * 60 * 60);
+                        } else {
+                            horasAntes13 += (limite13h - vueltaComer) / (1000 * 60 * 60);
+                            horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                        }
+                    }
+                }
+            } else if (!salidaComer) {
+                // Jornada continua sin pausa para comer
+                if (finJornada <= limite13h) {
+                    horasAntes13 += (finJornada - entrada) / (1000 * 60 * 60);
+                } else {
+                    horasAntes13 += (limite13h - entrada) / (1000 * 60 * 60);
+                    horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                }
+            }
+            
+            const totalHorasTrabajadas = horasAntes13 + horasDespues13;
+            
+            // Las horas extra se calculan sobre el total trabajado
+            // Solo son extra las que superan 8.25h (para nacional) o las que correspondan
+            let horasExtraAntes13 = 0;
+            let horasExtraDespues13 = 0;
+            
+            if (currentSession.horasExtra > 0) {
+                // Distribución proporcional de las horas extra
+                const proporcionAntes13 = totalHorasTrabajadas > 0 ? horasAntes13 / totalHorasTrabajadas : 0;
+                const proporcionDespues13 = totalHorasTrabajadas > 0 ? horasDespues13 / totalHorasTrabajadas : 0;
+                
+                horasExtraAntes13 = currentSession.horasExtra * proporcionAntes13;
+                horasExtraDespues13 = currentSession.horasExtra * proporcionDespues13;
+            }
+            
+            return {
+                horasNormales: Math.round(horasExtraAntes13 * 100) / 100,
+                horasEspeciales: Math.round(horasExtraDespues13 * 100) / 100
+            };
+        }
+
+        // Funciones de almacenamiento (ahora con Firebase)
+        function saveCurrentSession() {
+            saveCurrentSessionToFirebase();
+        }
+
+        function saveSessions() {
+            // Ya no se usa - Firebase guarda automáticamente
+            saveCurrentSessionToFirebase(); // Limpiar sesión actual
+        }
+
+        function loadSessions() {
+            // Ya no se usa - Firebase carga automáticamente
+        }
+
+        function saveConfig() {
+            config = {
+                horaInicioNocturno: document.getElementById('horaInicioNocturno').value,
+                horaFinNocturno: document.getElementById('horaFinNocturno').value,
+                precioComida: document.getElementById('precioComida').value,
+                precioCena: document.getElementById('precioCena').value,
+                pernoctaLV: document.getElementById('pernoctaLV').value,
+                pernoctaSDF: document.getElementById('pernoctaSDF').value,
+                sinPernoctaLV: document.getElementById('sinPernoctaLV').value,
+                sinPernoctaSDF: document.getElementById('sinPernoctaSDF').value,
+                dietaInternacionalLV: document.getElementById('dietaInternacionalLV').value,
+                dietaInternacionalSDF: document.getElementById('dietaInternacionalSDF').value,
+                pernoctaInternacionalLV: document.getElementById('pernoctaInternacionalLV').value,
+                pernoctaInternacionalSDF: document.getElementById('pernoctaInternacionalSDF').value,
+                extraTaller: document.getElementById('extraTaller').value,
+                extraCliente: document.getElementById('extraCliente').value,
+                extraEspecial: document.getElementById('extraEspecial').value,
+                extraInternacional: document.getElementById('extraInternacional').value
+            };
+            
+            saveConfigToFirebase();
+            alert('Configuración guardada correctamente');
+        }
+
+        function loadConfig() {
+            // Configuración por defecto
+            if (Object.keys(config).length === 0) {
+                config = {
+                    horaInicioNocturno: '22:00',
+                    horaFinNocturno: '06:00',
+                    precioComida: '13',
+                    precioCena: '15',
+                    pernoctaLV: '13',
+                    pernoctaSDF: '17',
+                    sinPernoctaLV: '7',
+                    sinPernoctaSDF: '10',
+                    dietaInternacionalLV: '26',
+                    dietaInternacionalSDF: '30',
+                    pernoctaInternacionalLV: '20',
+                    pernoctaInternacionalSDF: '25',
+                    extraTaller: '22.23',
+                    extraCliente: '23.82',
+                    extraEspecial: '27.79',
+                    extraInternacional: '22.23'
+                };
+            }
+            loadConfigToUI();
+        }
+
+        // Función para crear/actualizar el gráfico de evolución
+        function updateEvolutionChart() {
+            // Obtener datos agrupados por mes
+            const monthlyData = getMonthlyEvolutionData();
+            
+            const ctx = document.getElementById('evolutionChart').getContext('2d');
+            
+            // Destruir gráfico existente si existe
+            if (evolutionChart) {
+                evolutionChart.destroy();
+            }
+            
+            // Detectar si es móvil
+            const isMobile = window.innerWidth <= 768;
+            
+            evolutionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthlyData.labels,
+                    datasets: [{
+                        label: 'Horas Extra',
+                        data: monthlyData.horasExtra,
+                        borderColor: '#64748b',
+                        backgroundColor: 'rgba(100, 116, 139, 0.1)',
+                        borderWidth: isMobile ? 2 : 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Importe Extra (€)',
+                        data: monthlyData.importeExtra,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: isMobile ? 2 : 3,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    devicePixelRatio: isMobile ? 2 : undefined, // Mejor calidad en móvil
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        title: {
+                            display: false
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: isMobile ? 15 : 20,
+                                font: {
+                                    size: isMobile ? 12 : 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            borderColor: '#64748b',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            titleFont: {
+                                size: isMobile ? 12 : 14
+                            },
+                            bodyFont: {
+                                size: isMobile ? 11 : 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return `Horas Extra: ${context.parsed.y.toFixed(1)}h`;
+                                    } else {
+                                        return `Importe Extra: ${context.parsed.y.toFixed(2)}€`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: !isMobile, // Ocultar título en móvil para ahorrar espacio
+                                text: 'Mes',
+                                font: {
+                                    size: isMobile ? 12 : 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: isMobile ? 10 : 12
+                                },
+                                maxRotation: isMobile ? 45 : 0, // Rotar etiquetas en móvil si es necesario
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: isMobile ? 'Horas' : 'Horas Extra',
+                                color: '#64748b',
+                                font: {
+                                    size: isMobile ? 11 : 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                font: {
+                                    size: isMobile ? 10 : 12,
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(0) + 'h';
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: isMobile ? '€' : 'Importe Extra (€)',
+                                color: '#059669',
+                                font: {
+                                    size: isMobile ? 11 : 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                            ticks: {
+                                color: '#059669',
+                                font: {
+                                    size: isMobile ? 10 : 12,
+                                    weight: 'bold'
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(0) + '€';
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: isMobile ? 4 : 6,
+                            hoverRadius: isMobile ? 6 : 8,
+                            borderWidth: 2,
+                            backgroundColor: 'white'
+                        }
+                    }
+                }
+            });
+        }
+
+        function getMonthlyEvolutionData() {
+            // Agrupar sesiones por mes
+            const monthlyStats = {};
+            
+            allSessions.forEach(session => {
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                const year = sessionDate.getFullYear();
+                const month = sessionDate.getMonth();
+                const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
+                
+                if (!monthlyStats[monthKey]) {
+                    monthlyStats[monthKey] = {
+                        horasExtra: 0,
+                        importeExtra: 0,
+                        year: year,
+                        month: month
+                    };
+                }
+                
+                monthlyStats[monthKey].horasExtra += session.horasExtra || 0;
+                
+                // Calcular importe extra (solo las horas extra, no complementos)
+                let importeExtraSession = 0;
+                if (session.horasExtra > 0) {
+                    if (session.tipoServicio === 'nacional') {
+                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                            importeExtraSession += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else {
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas || 0, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            let tarifaNormal = session.ubicacion === 'taller' ? 
+                                parseFloat(config.extraTaller || 22.23) : 
+                                parseFloat(config.extraCliente || 23.82);
+                            
+                            importeExtraSession += horasExtraNormales * tarifaNormal;
+                            importeExtraSession += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    } else { // Internacional
+                        if (session.dia === 'sabado-tarde' || session.dia === 'S-D-F') {
+                            importeExtraSession += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else {
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas || 0, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            importeExtraSession += horasExtraNormales * parseFloat(config.extraInternacional || 22.23);
+                            importeExtraSession += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                }
+                
+                monthlyStats[monthKey].importeExtra += importeExtraSession;
+            });
+            
+            // Convertir a arrays ordenados
+            const sortedMonths = Object.keys(monthlyStats).sort();
+            
+            // Limitar a los últimos 12 meses para mejor visualización
+            const recentMonths = sortedMonths.slice(-12);
+            
+            const labels = recentMonths.map(monthKey => {
+                const [year, month] = monthKey.split('-');
+                const date = new Date(year, parseInt(month), 1);
+                return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+            });
+            
+            const horasExtra = recentMonths.map(monthKey => monthlyStats[monthKey].horasExtra);
+            const importeExtra = recentMonths.map(monthKey => monthlyStats[monthKey].importeExtra);
+            
+            return {
+                labels,
+                horasExtra,
+                importeExtra
+            };
+        }
+
+        // Funciones de resumen
+        function updateSummary() {
+            // Primero actualizar las opciones del desplegable
+            updateMonthSelector();
+            
+            // Obtener el mes seleccionado
+            const selectedValue = document.getElementById('mesResumen').value;
+            if (!selectedValue) return;
+            
+            const [year, month] = selectedValue.split('-').map(Number);
+            
+            const monthSessions = allSessions.filter(session => {
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
+            });
+            
+            const totalDias = monthSessions.length;
+            const totalHoras = monthSessions.reduce((sum, session) => sum + session.horasTrabajadas, 0);
+            const totalExtras = monthSessions.reduce((sum, session) => sum + session.horasExtra, 0);
+            const totalImporte = monthSessions.reduce((sum, session) => sum + session.importeTotal, 0);
+            
+            // Calcular desglose de importes
+            let totalComplementos = 0;
+            let totalHorasExtrasNormales = 0;
+            let totalHorasExtrasEspeciales = 0;
+            let importeExtrasNormales = 0;
+            let importeExtrasEspeciales = 0;
+            
+            monthSessions.forEach(session => {
+                if (session.tipoServicio === 'nacional') {
+                    // Complementos
+                    if (session.seHaComido === 'si') {
+                        totalComplementos += parseFloat(config.precioComida || 13);
+                    }
+                    if (session.seHaCenado === 'si') {
+                        totalComplementos += parseFloat(config.precioCena || 15);
+                    }
+                    
+                    // Pernocta solo para cliente
+                    if (session.ubicacion === 'cliente') {
+                        if (session.hayPernocta === 'si') {
+                            if (session.dia === 'L-V') {
+                                totalComplementos += parseFloat(config.pernoctaLV || 13);
+                            } else {
+                                totalComplementos += parseFloat(config.pernoctaSDF || 17);
+                            }
+                        } else {
+                            if (session.dia === 'L-V') {
+                                totalComplementos += parseFloat(config.sinPernoctaLV || 7);
+                            } else {
+                                totalComplementos += parseFloat(config.sinPernoctaSDF || 10);
+                            }
+                        }
+                    }
+                    
+                    // Horas extra
+                    if (session.horasExtra > 0) {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde (≥13:00) - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana (<13:00) - usar desglose calculado si existe
+                            if (session.horasExtraNormales !== undefined && session.horasExtraEspeciales !== undefined) {
+                                totalHorasExtrasNormales += session.horasExtraNormales;
+                                totalHorasExtrasEspeciales += session.horasExtraEspeciales;
+                                importeExtrasNormales += session.importeExtraNormales || 0;
+                                importeExtrasEspeciales += session.importeExtraEspeciales || 0;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5; // Asumimos 50% después de las 13:00
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                totalHorasExtrasNormales += horasNormales;
+                                totalHorasExtrasEspeciales += horasEspeciales;
+                                
+                                let tarifaNormal = session.ubicacion === 'taller' ? 
+                                    parseFloat(config.extraTaller || 22.23) : 
+                                    parseFloat(config.extraCliente || 23.82);
+                                
+                                importeExtrasNormales += horasNormales * tarifaNormal;
+                                importeExtrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
+                        } else {
+                            // Días L-V - separar normales de nocturnas
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            totalHorasExtrasNormales += horasExtraNormales;
+                            totalHorasExtrasEspeciales += horasExtraNocturnas;
+                            
+                            let tarifaNormal = session.ubicacion === 'taller' ? 
+                                parseFloat(config.extraTaller || 22.23) : 
+                                parseFloat(config.extraCliente || 23.82);
+                            
+                            importeExtrasNormales += horasExtraNormales * tarifaNormal;
+                            importeExtrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                } else { // Internacional
+                    // Dieta automática
+                    if (session.dia === 'L-V') {
+                        totalComplementos += parseFloat(config.dietaInternacionalLV || 26);
+                    } else {
+                        totalComplementos += parseFloat(config.dietaInternacionalSDF || 30);
+                    }
+                    
+                    // Pernocta internacional
+                    if (session.hayPernocta === 'si') {
+                        if (session.dia === 'L-V') {
+                            totalComplementos += parseFloat(config.pernoctaInternacionalLV || 20);
+                        } else {
+                            totalComplementos += parseFloat(config.pernoctaInternacionalSDF || 25);
+                        }
+                    }
+                    
+                    // Horas extra internacionales
+                    if (session.horasExtra > 0) {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde (≥13:00) - todas las horas son especiales
+                            totalHorasExtrasEspeciales += session.horasExtra;
+                            importeExtrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana (<13:00) - usar desglose calculado si existe
+                            if (session.horasExtraNormales !== undefined && session.horasExtraEspeciales !== undefined) {
+                                totalHorasExtrasNormales += session.horasExtraNormales;
+                                totalHorasExtrasEspeciales += session.horasExtraEspeciales;
+                                importeExtrasNormales += session.importeExtraNormales || 0;
+                                importeExtrasEspeciales += session.importeExtraEspeciales || 0;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5; // Asumimos 50% después de las 13:00
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                totalHorasExtrasNormales += horasNormales;
+                                totalHorasExtrasEspeciales += horasEspeciales;
+                                
+                                importeExtrasNormales += horasNormales * parseFloat(config.extraInternacional || 22.23);
+                                importeExtrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
+                        } else {
+                            // Días L-V - separar normales de nocturnas
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            totalHorasExtrasNormales += horasExtraNormales;
+                            totalHorasExtrasEspeciales += horasExtraNocturnas;
+                            
+                            importeExtrasNormales += horasExtraNormales * parseFloat(config.extraInternacional || 22.23);
+                            importeExtrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                }
+            });
+            
+            // Mostrar si no hay datos para el mes seleccionado
+            if (totalDias === 0) {
+                document.getElementById('summaryGrid').innerHTML = `
+                    <div class="summary-item" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666; font-style: italic;">
+                        No hay registros para este mes
+                    </div>
+                `;
+                return;
+            }
+            
+            document.getElementById('summaryGrid').innerHTML = `
+                <div class="summary-item highlight">
+                    <div class="value">${totalDias}</div>
+                    <div class="label">Días Trabajados</div>
+                </div>
+                <div class="summary-item highlight">
+                    <div class="value">${formatHours(totalHoras)}</div>
+                    <div class="label">Horas Totales</div>
+                </div>
+                <div class="summary-item highlight">
+                    <div class="value">${formatHours(totalExtras)}</div>
+                    <div class="label">Horas Extra</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${formatHours(totalHorasExtrasNormales)}</div>
+                    <div class="label">H. Extra Normales</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${formatHours(totalHorasExtrasEspeciales)}</div>
+                    <div class="label">H. Extra Nocturnas/Festivas</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${importeExtrasNormales.toFixed(2)}€</div>
+                    <div class="label">€ Extra Normales</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${importeExtrasEspeciales.toFixed(2)}€</div>
+                    <div class="label">€ Extra Nocturnas/Festivas</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value">${totalComplementos.toFixed(2)}€</div>
+                    <div class="label">Complementos</div>
+                </div>
+                <div class="summary-item highlight">
+                    <div class="value">${totalImporte.toFixed(2)}€</div>
+                    <div class="label">Importe Total</div>
+                </div>
+            `;
+        }
+
+        function updateMonthSelector() {
+            const selector = document.getElementById('mesResumen');
+            
+            // Obtener todos los meses únicos de las sesiones
+            const monthsWithData = new Set();
+            
+            allSessions.forEach(session => {
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                const year = sessionDate.getFullYear();
+                const month = sessionDate.getMonth();
+                monthsWithData.add(`${year}-${month}`);
+            });
+            
+            // Convertir a array y ordenar
+            const sortedMonths = Array.from(monthsWithData).sort((a, b) => {
+                const [yearA, monthA] = a.split('-').map(Number);
+                const [yearB, monthB] = b.split('-').map(Number);
+                
+                if (yearA !== yearB) return yearB - yearA; // Años más recientes primero
+                return monthB - monthA; // Meses más recientes primero
+            });
+            
+            // Agregar el mes actual aunque no tenga datos
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth();
+            const currentKey = `${currentYear}-${currentMonth}`;
+            
+            if (!monthsWithData.has(currentKey)) {
+                sortedMonths.unshift(currentKey);
+            }
+            
+            // Guardar selección actual
+            const currentSelection = selector.value;
+            
+            // Limpiar opciones
+            selector.innerHTML = '';
+            
+            // Agregar opciones
+            sortedMonths.forEach(monthKey => {
+                const [year, month] = monthKey.split('-').map(Number);
+                const monthName = new Date(year, month).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                const option = document.createElement('option');
+                option.value = monthKey;
+                option.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                
+                // Marcar si tiene datos
+                if (monthsWithData.has(monthKey)) {
+                    const sessionsCount = allSessions.filter(session => {
+                        const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                        return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
+                    }).length;
+                    option.textContent += ` (${sessionsCount} días)`;
+                }
+                
+                selector.appendChild(option);
+            });
+            
+            // Restaurar selección o seleccionar mes actual
+            if (currentSelection && selector.querySelector(`option[value="${currentSelection}"]`)) {
+                selector.value = currentSelection;
+            } else {
+                selector.value = currentKey; // Mes actual por defecto
+            }
+        }
+
+        // Funciones de tabla de registro
+        function updateRegistroTable() {
+            const tbody = document.getElementById('registroBody');
+            tbody.innerHTML = '';
+            
+            const filtro = document.getElementById('filtroTipo').value;
+            const fechaInicio = document.getElementById('fechaInicio').value;
+const fechaFin = document.getElementById('fechaFin').value;
+            
+            // Ordenar por fecha descendente
+            const sortedSessions = [...allSessions].sort((a, b) => {
+                const dateA = new Date(a.fecha.split('/').reverse().join('-'));
+                const dateB = new Date(b.fecha.split('/').reverse().join('-'));
+                return dateB - dateA;
+            });
+            
+            // Filtrar sesiones
+            // Filtrar sesiones
+const filteredSessions = sortedSessions.filter(session => {
+    // Filtro por fechas
+    const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+    
+    if (fechaInicio) {
+        const inicioDate = new Date(fechaInicio);
+        if (sessionDate < inicioDate) return false;
+    }
+    
+    if (fechaFin) {
+        const finDate = new Date(fechaFin);
+        if (sessionDate > finDate) return false;
+    }
+    
+    // Filtro por tipo
+    switch(filtro) {
+                    case 'todos':
+                        return true;
+                    case 'L-V':
+                        return session.dia === 'L-V' && !session.esFestivo;
+                    case 'sabado-manana':
+                        return session.dia === 'sabado-manana';
+                    case 'sabado-tarde':
+                        return session.dia === 'sabado-tarde';
+                    case 'S-D-F':
+                        return session.dia === 'S-D-F' && !session.esFestivo;
+                    case 'festivo':
+                        return session.esFestivo;
+                    case 'nacional':
+                        return session.tipoServicio === 'nacional';
+                    case 'internacional':
+                        return session.tipoServicio === 'internacional';
+                    case 'taller':
+                        return session.ubicacion === 'taller';
+                    case 'cliente':
+                        return session.ubicacion === 'cliente';
+                    default:
+                        return true;
+                }
+            });
+            
+            filteredSessions.forEach((session, index) => {
+                // Fila principal
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <button class="expand-btn" onclick="toggleDetails(${index})" id="expandBtn${index}">
+                            ▶️
+                        </button>
+                    </td>
+                    <td>${session.fecha}</td>
+                    <td>${session.esFestivo ? '🎉 Festivo' : (session.tipoServicio.charAt(0).toUpperCase() + session.tipoServicio.slice(1))}</td>
+                    <td>${session.ubicacion || '-'}</td>
+                    <td>${session.entrada}</td>
+                    <td>${session.finJornada}</td>
+                    <td>${formatHours(session.horasTrabajadas)}</td>
+                    <td>${formatHours(session.horasExtra)}</td>
+                    <td>${session.importeTotal.toFixed(2)}€</td>
+                    <td>
+                        <button class="action-btn btn-edit" onclick="editSession(${session.id})">✏️</button>
+                        <button class="action-btn btn-delete" onclick="deleteSession(${session.id})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                
+                // Fila de detalles
+                const detailRow = document.createElement('tr');
+                detailRow.className = 'detail-row';
+                detailRow.id = `detailRow${index}`;
+                
+                // Determinar el estado de pernocta según el tipo de servicio
+                let pernoctaStatus;
+                if (session.tipoServicio === 'internacional') {
+                    pernoctaStatus = session.hayPernocta === 'si' ? '✅ Sí' : '❌ No';
+                } else if (session.ubicacion === 'cliente') {
+                    pernoctaStatus = session.hayPernocta === 'si' ? '✅ Sí' : '❌ No';
+                } else {
+                    pernoctaStatus = 'N/A Taller';
+                }
+                
+                detailRow.innerHTML = `
+                    <td colspan="10">
+                        <div class="detail-content">
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Entrada:</span>
+                                    <span class="detail-value">${session.entrada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Entrada Original:</span>
+                                    <span class="detail-value">${session.entradaOriginal || session.entrada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Entrada:</span>
+                                    <span class="detail-value">${session.tipoEntrada ? (session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1)) : 'Puntual'}</span>
+                                    </div>
+                                <div class="detail-item">
+    <span class="detail-label">Salida Comer:</span>
+    <span class="detail-value">${session.salidaComer || '-'}</span>
+</div>
+<div class="detail-item">
+    <span class="detail-label">Salida Comer Original:</span>
+    <span class="detail-value">${session.salidaComerOriginal || session.salidaComer || '-'}</span>
+</div>
+<div class="detail-item">
+    <span class="detail-label">Tipo Salida Comer:</span>
+    <span class="detail-value">${session.tipoSalidaComer ? (session.tipoSalidaComer.charAt(0).toUpperCase() + session.tipoSalidaComer.slice(1)) : 'Puntual'}</span>
+</div>
+<div class="detail-item">
+    <span class="detail-label">Vuelta Comer:</span>
+    <span class="detail-value">${session.vueltaComer || '-'}</span>
+</div>
+<div class="detail-item">
+    <span class="detail-label">Vuelta Comer Original:</span>
+    <span class="detail-value">${session.vueltaComerOriginal || session.vueltaComer || '-'}</span>
+</div>
+<div class="detail-item">
+    <span class="detail-label">Tipo Vuelta Comer:</span>
+    <span class="detail-value">${session.tipoVueltaComer ? (session.tipoVueltaComer.charAt(0).toUpperCase() + session.tipoVueltaComer.slice(1)) : 'Puntual'}</span>
+</div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fin Jornada:</span>
+                                    <span class="detail-value">${session.finJornada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fin Jornada Original:</span>
+                                    <span class="detail-value">${session.finJornadaOriginal || session.finJornada}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Fin Jornada:</span>
+                                    <span class="detail-value">${session.tipoFinJornada ? (session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1)) : 'Puntual'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Horas Trabajadas:</span>
+                                    <span class="detail-value">${formatHours(session.horasTrabajadas)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Horas Extra:</span>
+                                    <span class="detail-value">${formatHours(session.horasExtra)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Horas Nocturnas:</span>
+                                    <span class="detail-value">${formatHours(session.horasNocturnas)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Día Tipo:</span>
+                                    <span class="detail-value">${session.dia}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">¿Es Festivo?:</span>
+                                    <span class="detail-value">${session.esFestivo ? '🎉 Sí' : '📅 No'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">¿Ha Comido?:</span>
+                                    <span class="detail-value">${session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaComido === 'si' ? '✅ Sí' : '❌ No')}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">¿Ha Cenado?:</span>
+                                    <span class="detail-value">${session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaCenado === 'si' ? '✅ Sí' : '❌ No')}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">¿Hay Pernocta?:</span>
+                                    <span class="detail-value">${pernoctaStatus}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(detailRow);
+            });
+            
+            // Mostrar mensaje si no hay resultados
+            if (filteredSessions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="10" style="text-align: center; padding: 20px; color: #666; font-style: italic;">
+                        No hay registros que coincidan con el filtro seleccionado
+                    </td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        function toggleDetails(index) {
+            const detailRow = document.getElementById(`detailRow${index}`);
+            const expandBtn = document.getElementById(`expandBtn${index}`);
+            
+            if (detailRow.style.display === 'none' || detailRow.style.display === '') {
+                detailRow.style.display = 'table-row';
+                expandBtn.textContent = '🔽';
+            } else {
+                detailRow.style.display = 'none';
+                expandBtn.textContent = '▶️';
+            }
+        }
+
+        function editSession(id) {
+            const session = allSessions.find(s => s.id === id);
+            if (!session) return;
+            
+            // Crear modal de edición dinámicamente
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>✏️ Editar Fichaje</h3>
+                    <form id="formEdit">
+                        <div class="form-group">
+                            <label>Fecha</label>
+                            <input type="date" id="editFecha" value="${session.fecha.split('/').reverse().join('-')}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Servicio</label>
+                            <select id="editTipoServicio" onchange="toggleEditUbicacion()">
+                                <option value="nacional" ${session.tipoServicio === 'nacional' ? 'selected' : ''}>Nacional</option>
+                                <option value="internacional" ${session.tipoServicio === 'internacional' ? 'selected' : ''}>Internacional</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="editUbicacionGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
+                            <label>Ubicación</label>
+                            <select id="editUbicacion">
+                                <option value="taller" ${session.ubicacion === 'taller' ? 'selected' : ''}>Taller</option>
+                                <option value="cliente" ${session.ubicacion === 'cliente' ? 'selected' : ''}>Cliente</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Entrada</label>
+                            <input type="time" id="editEntrada" value="${session.entrada}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Entrada</label>
+                            <select id="editTipoEntrada">
+                                <option value="temprano" ${session.tipoEntrada === 'temprano' ? 'selected' : ''}>Temprano</option>
+                                <option value="tarde" ${session.tipoEntrada === 'tarde' ? 'selected' : ''}>Tarde</option>
+                                <option value="puntual" ${(session.tipoEntrada || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+    <label>Salida Comer</label>
+    <input type="time" id="editSalidaComer" value="${session.salidaComer || ''}">
+</div>
+<div class="form-group">
+    <label>Tipo Salida Comer</label>
+    <select id="editTipoSalidaComer">
+        <option value="temprano" ${session.tipoSalidaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
+        <option value="tarde" ${session.tipoSalidaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
+        <option value="puntual" ${(session.tipoSalidaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+    </select>
+</div>
+<div class="form-group">
+    <label>Vuelta Comer</label>
+    <input type="time" id="editVueltaComer" value="${session.vueltaComer || ''}">
+</div>
+<div class="form-group">
+    <label>Tipo Vuelta Comer</label>
+    <select id="editTipoVueltaComer">
+        <option value="temprano" ${session.tipoVueltaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
+        <option value="tarde" ${session.tipoVueltaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
+        <option value="puntual" ${(session.tipoVueltaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+    </select>
+</div>
+                        <div class="form-group">
+                            <label>Fin Jornada</label>
+                            <input type="time" id="editFinJornada" value="${session.finJornada}" required>
+                        </div>
+                        <div class="form-group" id="editComidaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
+                            <label>¿Comida fuera?</label>
+                            <select id="editSeHaComido">
+                                <option value="no" ${session.seHaComido === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.seHaComido === 'si' ? 'selected' : ''}>Sí</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="editCenaGroup" style="display: ${session.tipoServicio === 'nacional' ? 'block' : 'none'}">
+                            <label>¿Cena fuera?</label>
+                            <select id="editSeHaCenado">
+                                <option value="no" ${session.seHaCenado === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.seHaCenado === 'si' ? 'selected' : ''}>Sí</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>¿Es día festivo?</label>
+                            <select id="editEsFestivo">
+                                <option value="no" ${!session.esFestivo ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.esFestivo ? 'selected' : ''}>Sí</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="editPernoctaGroup" style="display: ${(session.tipoServicio === 'nacional' && session.ubicacion === 'cliente') || session.tipoServicio === 'internacional' ? 'block' : 'none'}">
+                            <label>¿Hay pernocta?</label>
+                            <select id="editHayPernocta">
+                                <option value="no" ${session.hayPernocta === 'no' ? 'selected' : ''}>No</option>
+                                <option value="si" ${session.hayPernocta === 'si' ? 'selected' : ''}>Sí</option>
+                            </select>
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Función para toggle de ubicación en edición
+            window.toggleEditUbicacion = function() {
+                const tipoServicio = document.getElementById('editTipoServicio').value;
+                const comidaGroup = document.getElementById('editComidaGroup');
+                const cenaGroup = document.getElementById('editCenaGroup');
+                const ubicacionGroup = document.getElementById('editUbicacionGroup');
+                const pernoctaGroup = document.getElementById('editPernoctaGroup');
+                
+                if (tipoServicio === 'nacional') {
+                    ubicacionGroup.style.display = 'block';
+                    comidaGroup.style.display = 'block';
+                    cenaGroup.style.display = 'block';
+                    
+                    // Mostrar pernocta solo si es cliente
+                    const ubicacion = document.getElementById('editUbicacion').value;
+                    pernoctaGroup.style.display = ubicacion === 'cliente' ? 'block' : 'none';
+                } else {
+                    // Internacional
+                    ubicacionGroup.style.display = 'none';
+                    comidaGroup.style.display = 'none';
+                    cenaGroup.style.display = 'none';
+                    pernoctaGroup.style.display = 'block'; // Siempre mostrar pernocta para internacional
+                }
+            };
+            
+            // Event listener para cambio de ubicación
+            document.getElementById('editUbicacion').addEventListener('change', function() {
+                const tipoServicio = document.getElementById('editTipoServicio').value;
+                const pernoctaGroup = document.getElementById('editPernoctaGroup');
+                
+                if (tipoServicio === 'nacional') {
+                    pernoctaGroup.style.display = this.value === 'cliente' ? 'block' : 'none';
+                }
+            });
+            
+            document.getElementById('formEdit').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Actualizar datos de la sesión
+                const fecha = document.getElementById('editFecha').value;
+                session.fecha = fecha.split('-').reverse().join('/');
+                session.tipoServicio = document.getElementById('editTipoServicio').value;
+                session.ubicacion = session.tipoServicio === 'nacional' ? document.getElementById('editUbicacion').value : null;
+                session.esFestivo = document.getElementById('editEsFestivo').value === 'si';
+                session.entrada = document.getElementById('editEntrada').value;
+                session.tipoEntrada = document.getElementById('editTipoEntrada').value;
+                session.salidaComer = document.getElementById('editSalidaComer').value || null;
+session.tipoSalidaComer = document.getElementById('editTipoSalidaComer').value;
+session.vueltaComer = document.getElementById('editVueltaComer').value || null;
+session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
+                session.finJornada = document.getElementById('editFinJornada').value;
+                
+                if (session.tipoServicio === 'nacional') {
+                    session.seHaComido = document.getElementById('editSeHaComido').value;
+                    session.seHaCenado = document.getElementById('editSeHaCenado').value;
+                    session.hayPernocta = session.ubicacion === 'cliente' ? document.getElementById('editHayPernocta').value : 'no';
+                } else {
+                    // Internacional: no comida/cena (dieta incluye todo), pero sí pernocta
+                    session.seHaComido = 'no';
+                    session.seHaCenado = 'no';
+                    session.hayPernocta = document.getElementById('editHayPernocta').value;
+                }
+                
+                // Recalcular día, horas e importe
+                const sessionDate = new Date(fecha);
+                session.dia = getDayType(sessionDate, session.esFestivo);
+                
+                // Simular cálculos para la sesión editada usando las nuevas funciones
+                const tempCurrentSession = currentSession;
+                currentSession = session;
+                
+                // Recalcular horas usando la nueva lógica
+                const entrada = parseTime(session.entrada);
+                let salidaComer = null;
+                let vueltaComer = null;
+                let finJornada = null;
+                
+                if (session.salidaComer) {
+                    salidaComer = parseTimeForCalculation(session.salidaComer, entrada);
+                }
+                if (session.vueltaComer) {
+                    vueltaComer = parseTimeForCalculation(session.vueltaComer, salidaComer || entrada);
+                }
+                finJornada = parseTimeForCalculation(session.finJornada, vueltaComer || salidaComer || entrada);
+                
+                let horasTrabajadas = 0;
+                let horasNocturnas = 0;
+                
+                if (salidaComer) {
+                    const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
+                    horasTrabajadas += horasManana;
+                    horasNocturnas += calculateNightHours(entrada, salidaComer);
+                }
+                
+                if (vueltaComer) {
+                    const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
+                    horasTrabajadas += horasTarde;
+                    horasNocturnas += calculateNightHours(vueltaComer, finJornada);
+                } else if (!salidaComer) {
+                    const horasTotal = (finJornada - entrada) / (1000 * 60 * 60);
+                    horasTrabajadas += horasTotal;
+                    horasNocturnas += calculateNightHours(entrada, finJornada);
+                }
+                
+                session.horasTrabajadas = Math.round(horasTrabajadas * 100) / 100;
+                session.horasNocturnas = Math.round(horasNocturnas * 100) / 100;
+                
+                calculateExtraHours();
+                calculateAmount();
+                currentSession = tempCurrentSession;
+                
+                // Guardar cambios en Firebase
+                await saveSessionToFirebase(session);
+                updateRegistroTable();
+                updateSummary();
+                updateEvolutionChart();
+                modal.remove();
+            });
+        }
+
+        async function deleteSession(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este fichaje?')) {
+                try {
+                    // Eliminar de Firebase
+                    await window.firebaseDeleteDoc(
+                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'sessions', id.toString())
+                    );
+                    
+                    // Eliminar localmente (se actualizará automáticamente por el listener)
+                    allSessions = allSessions.filter(s => s.id !== id);
+                    updateRegistroTable();
+                    updateSummary();
+                    updateEvolutionChart();
+                } catch (error) {
+                    console.error('Error deleting session:', error);
+                    alert('Error al eliminar el fichaje');
+                }
+            }
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('fechaInicio').value = '';
+            document.getElementById('fechaFin').value = '';
+            document.getElementById('filtroTipo').value = 'todos';
+            updateRegistroTable();
+        }
+
+        // Funciones de importación/exportación
+        function exportData() {
+            const data = {
+                sessions: allSessions,
+                config: config,
+                currentSession: currentSession,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fichajes_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Función para exportar datos a CSV compatible con Google Sheets
+        function exportToCSV() {
+            // Ordenar sesiones por fecha
+            const sortedSessions = [...allSessions].sort((a, b) => {
+                const dateA = new Date(a.fecha.split('/').reverse().join('-'));
+                const dateB = new Date(b.fecha.split('/').reverse().join('-'));
+                return dateA - dateB;
+            });
+            
+            // Definir las columnas del CSV
+            const headers = [
+                'Fecha',
+                'Día Semana',
+                'Tipo Servicio',
+                'Ubicación',
+                'Es Festivo',
+                'Entrada',
+                'Entrada Original',
+                'Tipo Entrada',
+                'Salida Comer',
+                'Vuelta Comer',
+                'Fin Jornada',
+                'Fin Jornada Original',
+                'Tipo Fin Jornada',
+                'Horas Trabajadas',
+                'Horas Extra',
+                'Horas Nocturnas',
+                'Día Tipo',
+                'Ha Comido',
+                'Ha Cenado',
+                'Hay Pernocta',
+                'Importe Total (€)',
+                'Desglose Complementos',
+                'Desglose Extras Normales',
+                'Desglose Extras Especiales'
+            ];
+            
+            // Crear filas de datos
+            const rows = sortedSessions.map(session => {
+                // Convertir fecha para obtener día de la semana
+                const fechaParts = session.fecha.split('/');
+                const fechaObj = new Date(fechaParts[2], fechaParts[1] - 1, fechaParts[0]);
+                const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                const diaSemana = diasSemana[fechaObj.getDay()];
+                
+                // Calcular desglose de importes
+                let complementos = 0;
+                let extrasNormales = 0;
+                let extrasEspeciales = 0;
+                
+                if (session.tipoServicio === 'nacional') {
+                    // Complementos de comida y cena
+                    if (session.seHaComido === 'si') {
+                        complementos += parseFloat(config.precioComida || 13);
+                    }
+                    if (session.seHaCenado === 'si') {
+                        complementos += parseFloat(config.precioCena || 15);
+                    }
+                    
+                    // Complementos de pernocta (solo para cliente)
+                    if (session.ubicacion === 'cliente') {
+                        if (session.hayPernocta === 'si') {
+                            if (session.dia === 'L-V') {
+                                complementos += parseFloat(config.pernoctaLV || 13);
+                            } else {
+                                complementos += parseFloat(config.pernoctaSDF || 17);
+                            }
+                        } else {
+                            if (session.dia === 'L-V') {
+                                complementos += parseFloat(config.sinPernoctaLV || 7);
+                            } else {
+                                complementos += parseFloat(config.sinPernoctaSDF || 10);
+                            }
+                        }
+                    }
+                    
+                    // Horas extra
+                    if (session.horasExtra > 0) {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana - usar desglose si existe
+                            if (session.importeExtraNormales !== undefined && session.importeExtraEspeciales !== undefined) {
+                                extrasNormales += session.importeExtraNormales;
+                                extrasEspeciales += session.importeExtraEspeciales;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5;
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                let tarifaNormal = session.ubicacion === 'taller' ? 
+                                    parseFloat(config.extraTaller || 22.23) : 
+                                    parseFloat(config.extraCliente || 23.82);
+                                
+                                extrasNormales += horasNormales * tarifaNormal;
+                                extrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
+                        } else {
+                            // Días L-V - separar normales de nocturnas
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            let tarifaNormal = session.ubicacion === 'taller' ? 
+                                parseFloat(config.extraTaller || 22.23) : 
+                                parseFloat(config.extraCliente || 23.82);
+                            
+                            extrasNormales += horasExtraNormales * tarifaNormal;
+                            extrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                } else { // Internacional
+                    // Dieta automática
+                    if (session.dia === 'L-V') {
+                        complementos += parseFloat(config.dietaInternacionalLV || 26);
+                    } else {
+                        complementos += parseFloat(config.dietaInternacionalSDF || 30);
+                    }
+                    
+                    // Pernocta internacional
+                    if (session.hayPernocta === 'si') {
+                        if (session.dia === 'L-V') {
+                            complementos += parseFloat(config.pernoctaInternacionalLV || 20);
+                        } else {
+                            complementos += parseFloat(config.pernoctaInternacionalSDF || 25);
+                        }
+                    }
+                    
+                    // Horas extra internacionales
+                    if (session.horasExtra > 0) {
+                        if (session.dia === 'S-D-F') {
+                            // Domingo o festivo - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-tarde') {
+                            // Sábado tarde - todas especiales
+                            extrasEspeciales += session.horasExtra * parseFloat(config.extraEspecial || 27.79);
+                        } else if (session.dia === 'sabado-manana') {
+                            // Sábado mañana - usar desglose si existe
+                            if (session.importeExtraNormales !== undefined && session.importeExtraEspeciales !== undefined) {
+                                extrasNormales += session.importeExtraNormales;
+                                extrasEspeciales += session.importeExtraEspeciales;
+                            } else {
+                                // Fallback: calcular proporcionalmente
+                                const proporcionEspecial = 0.5;
+                                const horasEspeciales = session.horasExtra * proporcionEspecial;
+                                const horasNormales = session.horasExtra - horasEspeciales;
+                                
+                                extrasNormales += horasNormales * parseFloat(config.extraInternacional || 22.23);
+                                extrasEspeciales += horasEspeciales * parseFloat(config.extraEspecial || 27.79);
+                            }
+                        } else {
+                            // Días L-V - separar normales de nocturnas
+                            const horasExtraNocturnas = Math.min(session.horasNocturnas, session.horasExtra);
+                            const horasExtraNormales = session.horasExtra - horasExtraNocturnas;
+                            
+                            extrasNormales += horasExtraNormales * parseFloat(config.extraInternacional || 22.23);
+                            extrasEspeciales += horasExtraNocturnas * parseFloat(config.extraEspecial || 27.79);
+                        }
+                    }
+                }
+                
+                return [
+                    session.fecha,
+                    diaSemana,
+                    session.tipoServicio.charAt(0).toUpperCase() + session.tipoServicio.slice(1),
+                    session.ubicacion || '-',
+                    session.esFestivo ? 'Sí' : 'No',
+                    session.entrada,
+                    session.entradaOriginal || session.entrada,
+                    session.tipoEntrada ? session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1) : 'Puntual',
+                    session.salidaComer || '-',
+                    session.vueltaComer || '-',
+                    session.finJornada,
+                    session.finJornadaOriginal || session.finJornada,
+                    session.tipoFinJornada ? session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1) : 'Puntual',
+                    session.horasTrabajadas.toFixed(2),
+                    session.horasExtra.toFixed(2),
+                    session.horasNocturnas.toFixed(2),
+                    session.dia,
+                    session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaComido === 'si' ? 'Sí' : 'No'),
+                    session.tipoServicio === 'internacional' ? 'Dieta Incluida' : (session.seHaCenado === 'si' ? 'Sí' : 'No'),
+                    (() => {
+                        if (session.tipoServicio === 'internacional') {
+                            return session.hayPernocta === 'si' ? 'Sí' : 'No';
+                        } else if (session.ubicacion === 'cliente') {
+                            return session.hayPernocta === 'si' ? 'Sí' : 'No';
+                        } else {
+                            return 'N/A Taller';
+                        }
+                    })(),
+                    session.importeTotal.toFixed(2),
+                    complementos.toFixed(2),
+                    extrasNormales.toFixed(2),
+                    extrasEspeciales.toFixed(2)
+                ];
+            });
+            
+            // Combinar headers y rows
+            const csvContent = [headers, ...rows]
+                .map(row => row.map(field => {
+                    // Escapar comillas y envolver en comillas si contiene comas, comillas o saltos de línea
+                    const stringField = String(field);
+                    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+                        return '"' + stringField.replace(/"/g, '""') + '"';
+                    }
+                    return stringField;
+                }).join(','))
+                .join('\n');
+            
+            // Crear y descargar el archivo
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `fichajes_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
     
@@ -54,3 +3488,13 @@ async function importData(event) {
     // Limpiar el input
     event.target.value = '';
 }
+
+        // Cerrar modales al hacer clic fuera
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
