@@ -5,47 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Fichaje</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCKVGQkTXyQi8-fC8DaQYPo5QQERl-qS7g",
-            authDomain: "loginfichajes.firebaseapp.com",
-            projectId: "loginfichajes",
-            storageBucket: "loginfichajes.firebasestorage.app",
-            messagingSenderId: "982221953761",
-            appId: "1:982221953761:web:2fc8be647a61fc42c775a0"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const provider = new GoogleAuthProvider();
-
-        // Make Firebase available globally
-        window.firebaseAuth = auth;
-        window.firebaseDb = db;
-        window.firebaseProvider = provider;
-        window.firebaseSignInWithPopup = signInWithPopup;
-        window.firebaseSignOut = signOut;
-        window.firebaseOnAuthStateChanged = onAuthStateChanged;
-        window.firebaseDoc = doc;
-        window.firebaseSetDoc = setDoc;
-        window.firebaseGetDoc = getDoc;
-        window.firebaseCollection = collection;
-        window.firebaseQuery = query;
-        window.firebaseOnSnapshot = onSnapshot;
-        window.firebaseUpdateDoc = updateDoc;
-        window.firebaseDeleteDoc = deleteDoc;
-    </script>
-    
     <style>
         * {
             margin: 0;
@@ -504,138 +463,6 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
         }
 
-        .login-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-            background: #f8fafc;
-        }
-
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        .login-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            color: #64748b;
-            margin-bottom: 32px;
-            font-size: 16px;
-        }
-
-        .google-login-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 12px 24px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: white;
-            color: #334155;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .google-login-btn:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-        }
-
-        .user-details {
-            flex: 1;
-            text-align: left;
-        }
-
-        .user-name {
-            font-weight: 500;
-            color: #0f172a;
-            font-size: 14px;
-        }
-
-        .user-email {
-            color: #64748b;
-            font-size: 12px;
-        }
-
-        .logout-btn {
-            background: #64748b;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-
-        .logout-btn:hover {
-            background: #475569;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(248, 250, 252, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #e2e8f0;
-            border-top: 3px solid #334155;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         .file-input {
             display: none;
         }
@@ -883,40 +710,7 @@
     </style>
 </head>
 <body>
-    <!-- Loading overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-spinner"></div>
-    </div>
-
-    <!-- Login screen -->
-    <div id="loginScreen" class="login-container">
-        <div class="login-card">
-            <h1 class="login-title">📋 Dashboard de Fichaje</h1>
-            <p class="login-subtitle">Inicia sesión con tu cuenta de Google para acceder a tus datos</p>
-            <button id="googleLoginBtn" class="google-login-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Continuar con Google
-            </button>
-        </div>
-    </div>
-
-    <!-- Main app (hidden initially) -->
-    <div id="mainApp" class="container" style="display: none;">
-        <!-- User info bar -->
-        <div id="userInfo" class="user-info">
-            <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
-            <div class="user-details">
-                <div id="userName" class="user-name"></div>
-                <div id="userEmail" class="user-email"></div>
-            </div>
-            <button id="logoutBtn" class="logout-btn">Cerrar sesión</button>
-        </div>
-
+    <div class="container">
         <div class="tabs">
             <button class="tab active" onclick="showTab('fichaje')">Fichaje</button>
             <button class="tab" onclick="showTab('registro')">Registro</button>
@@ -1170,51 +964,51 @@
     </div>
 
     <div id="modalSalidaComer" class="modal">
-    <div class="modal-content">
-        <h3>🍽️ Salida para Comer</h3>
-        <form id="formSalidaComer">
-            <div class="form-group" id="comidaGroup">
-                <label>¿Comida fuera?</label>
-                <select id="seHaComido">
-                    <option value="no">No</option>
-                    <option value="si">Sí</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Tipo de Salida para Comer</label>
-                <select id="tipoSalidaComer">
-                    <option value="puntual">Puntual (sin redondeo)</option>
-                    <option value="temprano">Temprano (redondeo hacia arriba)</option>
-                    <option value="tarde">Tarde (redondeo hacia abajo)</option>
-                </select>
-            </div>
-            <div class="modal-buttons">
-                <button type="submit" class="btn btn-primary">Fichar Salida</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            </div>
-        </form>
+        <div class="modal-content">
+            <h3>🍽️ Salida para Comer</h3>
+            <form id="formSalidaComer">
+                <div class="form-group" id="comidaGroup">
+                    <label>¿Comida fuera?</label>
+                    <select id="seHaComido">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Salida para Comer</label>
+                    <select id="tipoSalidaComer">
+                        <option value="puntual">Puntual (sin redondeo)</option>
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Fichar Salida</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
     <div id="modalVueltaComer" class="modal">
-    <div class="modal-content">
-        <h3>🔙 Vuelta de Comer</h3>
-        <form id="formVueltaComer">
-            <div class="form-group">
-                <label>Tipo de Vuelta de Comer</label>
-                <select id="tipoVueltaComer">
-                    <option value="puntual">Puntual (sin redondeo)</option>
-                    <option value="temprano">Temprano (redondeo hacia arriba)</option>
-                    <option value="tarde">Tarde (redondeo hacia abajo)</option>
-                </select>
-            </div>
-            <div class="modal-buttons">
-                <button type="submit" class="btn btn-primary">Confirmar</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-            </div>
-        </form>
+        <div class="modal-content">
+            <h3>🔙 Vuelta de Comer</h3>
+            <form id="formVueltaComer">
+                <div class="form-group">
+                    <label>Tipo de Vuelta de Comer</label>
+                    <select id="tipoVueltaComer">
+                        <option value="puntual">Puntual (sin redondeo)</option>
+                        <option value="temprano">Temprano (redondeo hacia arriba)</option>
+                        <option value="tarde">Tarde (redondeo hacia abajo)</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-primary">Confirmar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
     <div id="modalFinJornada" class="modal">
         <div class="modal-content">
@@ -1257,186 +1051,18 @@
         let allSessions = [];
         let config = {};
         let evolutionChart = null;
-        let currentUser = null;
-        let unsubscribeFirestore = null;
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Firebase to load
-            setTimeout(initializeAuth, 500);
-        });
-
-        // Firebase Authentication
-        function initializeAuth() {
-            const loginScreen = document.getElementById('loginScreen');
-            const mainApp = document.getElementById('mainApp');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-
-            // Show loading
-            loadingOverlay.style.display = 'flex';
-
-            // Auth state observer
-            window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
-                loadingOverlay.style.display = 'none';
-                
-                if (user) {
-                    // User is signed in
-                    currentUser = user;
-                    showMainApp(user);
-                    loadUserData();
-                } else {
-                    // User is signed out
-                    currentUser = null;
-                    showLoginScreen();
-                }
-            });
-
-            // Google login
-            googleLoginBtn.addEventListener('click', async () => {
-                try {
-                    loadingOverlay.style.display = 'flex';
-                    await window.firebaseSignInWithPopup(window.firebaseAuth, window.firebaseProvider);
-                } catch (error) {
-                    console.error('Error signing in:', error);
-                    alert('Error al iniciar sesión: ' + error.message);
-                    loadingOverlay.style.display = 'none';
-                }
-            });
-
-            // Logout
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    if (unsubscribeFirestore) {
-                        unsubscribeFirestore();
-                    }
-                    await window.firebaseSignOut(window.firebaseAuth);
-                } catch (error) {
-                    console.error('Error signing out:', error);
-                }
-            });
-        }
-
-        function showLoginScreen() {
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('mainApp').style.display = 'none';
-        }
-
-        function showMainApp(user) {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('mainApp').style.display = 'block';
-            
-            // Update user info
-            document.getElementById('userName').textContent = user.displayName;
-            document.getElementById('userEmail').textContent = user.email;
-            document.getElementById('userAvatar').src = user.photoURL;
-            
-            // Initialize main app
-            initializeMainApp();
-        }
-
-        function initializeMainApp() {
             loadConfig();
+            loadSessions();
             updateClock();
             updateButtonsState();
             updateSummary();
             updateEvolutionChart();
             updateRegistroTable();
             setInterval(updateClock, 1000);
-        }
-
-        // Firebase Firestore functions
-        async function loadUserData() {
-            if (!currentUser) return;
-            
-            try {
-                // Load sessions
-                const sessionsRef = window.firebaseCollection(window.firebaseDb, 'users', currentUser.uid, 'sessions');
-                unsubscribeFirestore = window.firebaseOnSnapshot(sessionsRef, (querySnapshot) => {
-                    allSessions = [];
-                    querySnapshot.forEach((doc) => {
-                        allSessions.push({ id: doc.id, ...doc.data() });
-                    });
-                    updateSummary();
-                    updateEvolutionChart();
-                    updateRegistroTable();
-                });
-
-                // Load config
-                const configDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'settings'));
-                if (configDoc.exists()) {
-                    config = configDoc.data();
-                    loadConfigToUI();
-                }
-
-                // Load current session
-                const currentSessionDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession'));
-                if (currentSessionDoc.exists()) {
-                    currentSession = currentSessionDoc.data();
-                }
-                
-                updateButtonsState();
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            }
-        }
-
-        async function saveSessionToFirebase(session) {
-            if (!currentUser) return;
-            
-            try {
-                await window.firebaseSetDoc(
-                    window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'sessions', session.id.toString()),
-                    session
-                );
-            } catch (error) {
-                console.error('Error saving session:', error);
-                alert('Error al guardar el fichaje');
-            }
-        }
-
-        async function saveCurrentSessionToFirebase() {
-            if (!currentUser) return;
-            
-            try {
-                if (currentSession) {
-                    await window.firebaseSetDoc(
-                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession'),
-                        currentSession
-                    );
-                } else {
-                    await window.firebaseDeleteDoc(
-                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'currentSession')
-                    );
-                }
-            } catch (error) {
-                console.error('Error saving current session:', error);
-            }
-        }
-
-        async function saveConfigToFirebase() {
-            if (!currentUser) return;
-            
-            try {
-                await window.firebaseSetDoc(
-                    window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'config', 'settings'),
-                    config
-                );
-            } catch (error) {
-                console.error('Error saving config:', error);
-                alert('Error al guardar la configuración');
-            }
-        }
-
-        function loadConfigToUI() {
-            Object.keys(config).forEach(key => {
-                const element = document.getElementById(key);
-                if (element) {
-                    element.value = config[key];
-                }
-            });
-        }
+        });
 
         // Funciones de tiempo
         function updateClock() {
@@ -1574,14 +1200,15 @@
             ficharSalidaComer();
         });
 
+        document.getElementById('formVueltaComer').addEventListener('submit', function(e) {
+            e.preventDefault();
+            ficharVueltaComer();
+        });
+
         document.getElementById('formFinJornada').addEventListener('submit', function(e) {
             e.preventDefault();
             ficharFinJornada();
         });
-        document.getElementById('formVueltaComer').addEventListener('submit', function(e) {
-    e.preventDefault();
-    ficharVueltaComer();
-});
 
         function ficharEntrada() {
             const now = new Date();
@@ -1624,46 +1251,46 @@
         }
 
         function ficharSalidaComer() {
-    const now = new Date();
-    const seHaComido = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaComido').value : 'no';
-    const tipoSalidaComer = document.getElementById('tipoSalidaComer').value;
-    
-    // Calcular la hora de salida con redondeo si es necesario
-    let horaSalida = now;
-    if (tipoSalidaComer !== 'puntual') {
-        horaSalida = redondearHoraPorCuartos(now, tipoSalidaComer);
-    }
-    
-    currentSession.salidaComer = formatTime(horaSalida);
-    currentSession.salidaComerOriginal = formatTime(now);
-    currentSession.tipoSalidaComer = tipoSalidaComer;
-    currentSession.seHaComido = seHaComido;
-    
-    saveCurrentSession();
-    updateButtonsState();
-    closeModal();
-}
+            const now = new Date();
+            const seHaComido = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaComido').value : 'no';
+            const tipoSalidaComer = document.getElementById('tipoSalidaComer').value;
+            
+            // Calcular la hora de salida con redondeo si es necesario
+            let horaSalida = now;
+            if (tipoSalidaComer !== 'puntual') {
+                horaSalida = redondearHoraPorCuartos(now, tipoSalidaComer);
+            }
+            
+            currentSession.salidaComer = formatTime(horaSalida);
+            currentSession.salidaComerOriginal = formatTime(now);
+            currentSession.tipoSalidaComer = tipoSalidaComer;
+            currentSession.seHaComido = seHaComido;
+            
+            saveCurrentSession();
+            updateButtonsState();
+            closeModal();
+        }
 
         function ficharVueltaComer() {
-    const now = new Date();
-    const tipoVueltaComer = document.getElementById('tipoVueltaComer').value;
-    
-    // Calcular la hora de vuelta con redondeo si es necesario
-    let horaVuelta = now;
-    if (tipoVueltaComer !== 'puntual') {
-        horaVuelta = redondearHoraPorCuartos(now, tipoVueltaComer);
-    }
-    
-    currentSession.vueltaComer = formatTime(horaVuelta);
-    currentSession.vueltaComerOriginal = formatTime(now);
-    currentSession.tipoVueltaComer = tipoVueltaComer;
-    
-    saveCurrentSession();
-    updateButtonsState();
-    closeModal();
-}
+            const now = new Date();
+            const tipoVueltaComer = document.getElementById('tipoVueltaComer').value;
+            
+            // Calcular la hora de vuelta con redondeo si es necesario
+            let horaVuelta = now;
+            if (tipoVueltaComer !== 'puntual') {
+                horaVuelta = redondearHoraPorCuartos(now, tipoVueltaComer);
+            }
+            
+            currentSession.vueltaComer = formatTime(horaVuelta);
+            currentSession.vueltaComerOriginal = formatTime(now);
+            currentSession.tipoVueltaComer = tipoVueltaComer;
+            
+            saveCurrentSession();
+            updateButtonsState();
+            closeModal();
+        }
 
-        async function ficharFinJornada() {
+        function ficharFinJornada() {
             const now = new Date();
             const tipoFinJornada = document.getElementById('tipoFinJornada').value;
             let seHaCenado = 'no';
@@ -1697,8 +1324,8 @@
             calculateHours();
             calculateAmount();
             
-            // Guardar sesión completa en Firebase
-            await saveSessionToFirebase(currentSession);
+            // Guardar sesión completa
+            allSessions.push(currentSession);
             currentSession = null;
             
             saveSessions();
@@ -2121,19 +1748,27 @@
             };
         }
 
-        // Funciones de almacenamiento (ahora con Firebase)
+        // Funciones de almacenamiento
         function saveCurrentSession() {
-            saveCurrentSessionToFirebase();
+            localStorage.setItem('currentSession', JSON.stringify(currentSession));
         }
 
-       // function saveSessions() {
-            // Ya no se usa - Firebase guarda automáticamente
-            saveCurrentSessionToFirebase(); // Limpiar sesión actual
-       // }
+        function saveSessions() {
+            localStorage.setItem('allSessions', JSON.stringify(allSessions));
+            localStorage.removeItem('currentSession');
+        }
 
-       // function loadSessions() {
-            // Ya no se usa - Firebase carga automáticamente
-       // }
+        function loadSessions() {
+            const stored = localStorage.getItem('allSessions');
+            if (stored) {
+                allSessions = JSON.parse(stored);
+            }
+            
+            const currentStored = localStorage.getItem('currentSession');
+            if (currentStored) {
+                currentSession = JSON.parse(currentStored);
+            }
+        }
 
         function saveConfig() {
             config = {
@@ -2155,13 +1790,24 @@
                 extraInternacional: document.getElementById('extraInternacional').value
             };
             
-            saveConfigToFirebase();
+            localStorage.setItem('config', JSON.stringify(config));
             alert('Configuración guardada correctamente');
         }
 
         function loadConfig() {
-            // Configuración por defecto
-            if (Object.keys(config).length === 0) {
+            const stored = localStorage.getItem('config');
+            if (stored) {
+                config = JSON.parse(stored);
+                
+                // Cargar valores en los campos
+                Object.keys(config).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = config[key];
+                    }
+                });
+            } else {
+                // Configuración por defecto
                 config = {
                     horaInicioNocturno: '22:00',
                     horaFinNocturno: '06:00',
@@ -2181,7 +1827,6 @@
                     extraInternacional: '22.23'
                 };
             }
-            loadConfigToUI();
         }
 
         // Función para crear/actualizar el gráfico de evolución
@@ -2725,7 +2370,7 @@
             
             const filtro = document.getElementById('filtroTipo').value;
             const fechaInicio = document.getElementById('fechaInicio').value;
-const fechaFin = document.getElementById('fechaFin').value;
+            const fechaFin = document.getElementById('fechaFin').value;
             
             // Ordenar por fecha descendente
             const sortedSessions = [...allSessions].sort((a, b) => {
@@ -2734,7 +2379,6 @@ const fechaFin = document.getElementById('fechaFin').value;
                 return dateB - dateA;
             });
             
-            // Filtrar sesiones
             // Filtrar sesiones
 const filteredSessions = sortedSessions.filter(session => {
     // Filtro por fechas
@@ -2831,31 +2475,31 @@ const filteredSessions = sortedSessions.filter(session => {
                                 <div class="detail-item">
                                     <span class="detail-label">Tipo Entrada:</span>
                                     <span class="detail-value">${session.tipoEntrada ? (session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1)) : 'Puntual'}</span>
-                                    </div>
+                                </div>
                                 <div class="detail-item">
-    <span class="detail-label">Salida Comer:</span>
-    <span class="detail-value">${session.salidaComer || '-'}</span>
-</div>
-<div class="detail-item">
-    <span class="detail-label">Salida Comer Original:</span>
-    <span class="detail-value">${session.salidaComerOriginal || session.salidaComer || '-'}</span>
-</div>
-<div class="detail-item">
-    <span class="detail-label">Tipo Salida Comer:</span>
-    <span class="detail-value">${session.tipoSalidaComer ? (session.tipoSalidaComer.charAt(0).toUpperCase() + session.tipoSalidaComer.slice(1)) : 'Puntual'}</span>
-</div>
-<div class="detail-item">
-    <span class="detail-label">Vuelta Comer:</span>
-    <span class="detail-value">${session.vueltaComer || '-'}</span>
-</div>
-<div class="detail-item">
-    <span class="detail-label">Vuelta Comer Original:</span>
-    <span class="detail-value">${session.vueltaComerOriginal || session.vueltaComer || '-'}</span>
-</div>
-<div class="detail-item">
-    <span class="detail-label">Tipo Vuelta Comer:</span>
-    <span class="detail-value">${session.tipoVueltaComer ? (session.tipoVueltaComer.charAt(0).toUpperCase() + session.tipoVueltaComer.slice(1)) : 'Puntual'}</span>
-</div>
+                                    <span class="detail-label">Salida Comer:</span>
+                                    <span class="detail-value">${session.salidaComer || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Salida Comer Original:</span>
+                                    <span class="detail-value">${session.salidaComerOriginal || session.salidaComer || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Salida Comer:</span>
+                                    <span class="detail-value">${session.tipoSalidaComer ? (session.tipoSalidaComer.charAt(0).toUpperCase() + session.tipoSalidaComer.slice(1)) : 'Puntual'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Vuelta Comer:</span>
+                                    <span class="detail-value">${session.vueltaComer || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Vuelta Comer Original:</span>
+                                    <span class="detail-value">${session.vueltaComerOriginal || session.vueltaComer || '-'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Tipo Vuelta Comer:</span>
+                                    <span class="detail-value">${session.tipoVueltaComer ? (session.tipoVueltaComer.charAt(0).toUpperCase() + session.tipoVueltaComer.slice(1)) : 'Puntual'}</span>
+                                </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Fin Jornada:</span>
                                     <span class="detail-value">${session.finJornada}</span>
@@ -2975,29 +2619,29 @@ const filteredSessions = sortedSessions.filter(session => {
                             </select>
                         </div>
                         <div class="form-group">
-    <label>Salida Comer</label>
-    <input type="time" id="editSalidaComer" value="${session.salidaComer || ''}">
-</div>
-<div class="form-group">
-    <label>Tipo Salida Comer</label>
-    <select id="editTipoSalidaComer">
-        <option value="temprano" ${session.tipoSalidaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
-        <option value="tarde" ${session.tipoSalidaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
-        <option value="puntual" ${(session.tipoSalidaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
-    </select>
-</div>
-<div class="form-group">
-    <label>Vuelta Comer</label>
-    <input type="time" id="editVueltaComer" value="${session.vueltaComer || ''}">
-</div>
-<div class="form-group">
-    <label>Tipo Vuelta Comer</label>
-    <select id="editTipoVueltaComer">
-        <option value="temprano" ${session.tipoVueltaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
-        <option value="tarde" ${session.tipoVueltaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
-        <option value="puntual" ${(session.tipoVueltaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
-    </select>
-</div>
+                            <label>Salida Comer</label>
+                            <input type="time" id="editSalidaComer" value="${session.salidaComer || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo Salida Comer</label>
+                            <select id="editTipoSalidaComer">
+                                <option value="temprano" ${session.tipoSalidaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
+                                <option value="tarde" ${session.tipoSalidaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
+                                <option value="puntual" ${(session.tipoSalidaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Vuelta Comer</label>
+                            <input type="time" id="editVueltaComer" value="${session.vueltaComer || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo Vuelta Comer</label>
+                            <select id="editTipoVueltaComer">
+                                <option value="temprano" ${session.tipoVueltaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
+                                <option value="tarde" ${session.tipoVueltaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
+                                <option value="puntual" ${(session.tipoVueltaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
+                            </select>
+                        </div>
                         <div class="form-group">
                             <label>Fin Jornada</label>
                             <input type="time" id="editFinJornada" value="${session.finJornada}" required>
@@ -3075,7 +2719,7 @@ const filteredSessions = sortedSessions.filter(session => {
                 }
             });
             
-            document.getElementById('formEdit').addEventListener('submit', async function(e) {
+            document.getElementById('formEdit').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 // Actualizar datos de la sesión
@@ -3087,9 +2731,9 @@ const filteredSessions = sortedSessions.filter(session => {
                 session.entrada = document.getElementById('editEntrada').value;
                 session.tipoEntrada = document.getElementById('editTipoEntrada').value;
                 session.salidaComer = document.getElementById('editSalidaComer').value || null;
-session.tipoSalidaComer = document.getElementById('editTipoSalidaComer').value;
-session.vueltaComer = document.getElementById('editVueltaComer').value || null;
-session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
+                session.tipoSalidaComer = document.getElementById('editTipoSalidaComer').value;
+                session.vueltaComer = document.getElementById('editVueltaComer').value || null;
+                session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
                 session.finJornada = document.getElementById('editFinJornada').value;
                 
                 if (session.tipoServicio === 'nacional') {
@@ -3151,8 +2795,7 @@ session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
                 calculateAmount();
                 currentSession = tempCurrentSession;
                 
-                // Guardar cambios en Firebase
-                await saveSessionToFirebase(session);
+                saveSessions();
                 updateRegistroTable();
                 updateSummary();
                 updateEvolutionChart();
@@ -3160,23 +2803,13 @@ session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
             });
         }
 
-        async function deleteSession(id) {
+        function deleteSession(id) {
             if (confirm('¿Estás seguro de que quieres eliminar este fichaje?')) {
-                try {
-                    // Eliminar de Firebase
-                    await window.firebaseDeleteDoc(
-                        window.firebaseDoc(window.firebaseDb, 'users', currentUser.uid, 'sessions', id.toString())
-                    );
-                    
-                    // Eliminar localmente (se actualizará automáticamente por el listener)
-                    allSessions = allSessions.filter(s => s.id !== id);
-                    updateRegistroTable();
-                    updateSummary();
-                    updateEvolutionChart();
-                } catch (error) {
-                    console.error('Error deleting session:', error);
-                    alert('Error al eliminar el fichaje');
-                }
+                allSessions = allSessions.filter(s => s.id !== id);
+                saveSessions();
+                updateRegistroTable();
+                updateSummary();
+                updateEvolutionChart();
             }
         }
 
@@ -3432,62 +3065,44 @@ session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
             URL.revokeObjectURL(url);
         }
 
-        async function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const data = JSON.parse(e.target.result);
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             
-            if (confirm('¿Estás seguro de que quieres importar estos datos? Esto sobrescribirá todos los datos actuales.')) {
-                // Mostrar loading
-                document.getElementById('loadingOverlay').style.display = 'flex';
-                
+            const reader = new FileReader();
+            reader.onload = function(e) {
                 try {
-                    // Importar configuración si existe
-                    if (data.config) {
-                        config = data.config;
-                        await saveConfigToFirebase();
-                        loadConfigToUI();
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (confirm('¿Estás seguro de que quieres importar estos datos? Esto sobrescribirá todos los datos actuales.')) {
+                        allSessions = data.sessions || [];
+                        config = data.config || config;
+                        currentSession = data.currentSession || null;
+                        
+                        // Guardar datos importados
+                        saveSessions();
+                        saveConfig();
+                        if (currentSession) saveCurrentSession();
+                        
+                        // Actualizar interfaz
+                        loadConfig();
+                        updateRegistroTable();
+                        updateSummary();
+                        updateEvolutionChart();
+                        updateButtonsState();
+                        
+                        alert('Datos importados correctamente');
                     }
-                    
-                    // Importar sesión actual si existe
-                    if (data.currentSession) {
-                        currentSession = data.currentSession;
-                        await saveCurrentSessionToFirebase();
-                    }
-                    
-                    // Importar todas las sesiones a Firebase
-                    if (data.sessions && Array.isArray(data.sessions)) {
-                        for (const session of data.sessions) {
-                            await saveSessionToFirebase(session);
-                        }
-                    }
-                    
-                    // Actualizar interfaz
-                    updateButtonsState();
-                    
-                    alert('Datos importados correctamente');
                 } catch (error) {
-                    console.error('Error importing to Firebase:', error);
-                    alert('Error al guardar los datos importados en Firebase');
-                } finally {
-                    // Ocultar loading
-                    document.getElementById('loadingOverlay').style.display = 'none';
+                    alert('Error al importar el archivo. Asegúrate de que sea un archivo válido.');
                 }
-            }
-        } catch (error) {
-            console.error('Error parsing import file:', error);
-            alert('Error al importar el archivo. Asegúrate de que sea un archivo válido.');
+            };
+            reader.readAsText(file);
+            
+            // Limpiar el input
+            event.target.value = '';
         }
-    };
-    reader.readAsText(file);
-    
-    // Limpiar el input
-    event.target.value = '';
-}
+
         // Cerrar modales al hacer clic fuera
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
