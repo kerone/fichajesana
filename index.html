@@ -948,6 +948,20 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>¿Vas a fichar salida/vuelta de comer?</label>
+                    <select id="ficharComida" onchange="toggleComidaOptions()">
+                        <option value="si">Sí, ficharé salida y vuelta de comer</option>
+                        <option value="no">No, trabajaré sin comer</option>
+                    </select>
+                </div>
+                <div class="form-group" id="comidaGroup" style="display: none;">
+                    <label>¿Comerás fuera?</label>
+                    <select id="seHaComido">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>Tipo de Entrada</label>
                     <select id="tipoEntrada">
                         <option value="temprano">Temprano (redondeo hacia arriba)</option>
@@ -968,8 +982,8 @@
             <h3>🍽️ Salida para Comer</h3>
             <form id="formSalidaComer">
                 <div class="form-group" id="comidaGroup">
-                    <label>¿Comida fuera?</label>
-                    <select id="seHaComido">
+                    <label>¿Comerás fuera?</label>
+                    <select id="seHaComidoSalida">
                         <option value="no">No</option>
                         <option value="si">Sí</option>
                     </select>
@@ -1031,7 +1045,6 @@
                 <div class="form-group">
                     <label>Tipo de Fin de Jornada</label>
                     <select id="tipoFinJornada">
-                        
                         <option value="tarde">Tarde (redondeo hacia abajo)</option>
                         <option value="temprano">Temprano (redondeo hacia arriba)</option>
                         <option value="puntual">Puntual (sin redondeo)</option>
@@ -1104,18 +1117,18 @@
             const modal = document.getElementById('modal' + tipo.charAt(0).toUpperCase() + tipo.slice(1));
             modal.style.display = 'block';
             
-            // Configurar visibilidad de campos según el tipo de servicio actual
+            // Configurar visibilidad de campos según el tipo
             if (tipo === 'salidaComer') {
-                // Resetear visibilidad por defecto
-                document.getElementById('comidaGroup').style.display = 'block';
-                
-                // Ocultar solo si es internacional
-                if (currentSession && currentSession.tipoServicio === 'internacional') {
-                    document.getElementById('comidaGroup').style.display = 'none';
+                // Para salida de comer, mostrar pregunta de comida solo si es nacional
+                const comidaGroup = modal.querySelector('#comidaGroup');
+                if (comidaGroup) {
+                    if (currentSession && currentSession.tipoServicio === 'nacional') {
+                        comidaGroup.style.display = 'block';
+                    } else {
+                        comidaGroup.style.display = 'none';
+                    }
                 }
-            }
-            
-            if (tipo === 'finJornada') {
+            } else if (tipo === 'finJornada') {
                 // Resetear visibilidad por defecto
                 document.getElementById('cenaGroup').style.display = 'block';
                 document.getElementById('pernoctaGroup').style.display = 'block';
@@ -1147,7 +1160,31 @@
         function toggleUbicacion() {
             const tipoServicio = document.getElementById('tipoServicio').value;
             const ubicacionGroup = document.getElementById('ubicacionGroup');
+            const comidaGroup = document.getElementById('comidaGroup');
+            
             ubicacionGroup.style.display = tipoServicio === 'nacional' ? 'block' : 'none';
+            
+            // Ocultar también la pregunta de comida para internacional
+            if (tipoServicio === 'internacional') {
+                document.getElementById('ficharComida').value = 'si'; // Forzar a "sí" para internacional
+                comidaGroup.style.display = 'none';
+            } else {
+                // Para nacional, mostrar/ocultar según la selección actual
+                toggleComidaOptions();
+            }
+        }
+
+        function toggleComidaOptions() {
+            const ficharComida = document.getElementById('ficharComida').value;
+            const tipoServicio = document.getElementById('tipoServicio').value;
+            const comidaGroup = document.getElementById('comidaGroup');
+            
+            // Solo mostrar la pregunta de comida si es nacional y no va a fichar comida
+            if (tipoServicio === 'nacional' && ficharComida === 'no') {
+                comidaGroup.style.display = 'block';
+            } else {
+                comidaGroup.style.display = 'none';
+            }
         }
 
         // Funciones de fichaje
@@ -1170,21 +1207,29 @@
                 btnEntrada.disabled = false;
                 status.textContent = "Listo para fichar entrada";
             } else {
-                if (!currentSession.salidaComer) {
-                    // Mostrar solo botón de salida para comer
-                    btnSalidaComer.style.display = 'flex';
-                    btnSalidaComer.disabled = false;
-                    status.textContent = "Trabajando - Siguiente: Salida para comer";
-                } else if (!currentSession.vueltaComer) {
-                    // Mostrar solo botón de vuelta de comer
-                    btnVueltaComer.style.display = 'flex';
-                    btnVueltaComer.disabled = false;
-                    status.textContent = "En pausa para comer - Siguiente: Vuelta de comer";
-                } else if (!currentSession.finJornada) {
-                    // Mostrar solo botón de fin de jornada
-                    btnFinJornada.style.display = 'flex';
-                    btnFinJornada.disabled = false;
-                    status.textContent = "Trabajando - Siguiente: Fin de jornada";
+                // Verificar si va a fichar comida o no
+                if (currentSession.ficharComida === 'si') {
+                    // Flujo normal con fichaje de comida
+                    if (!currentSession.salidaComer) {
+                        btnSalidaComer.style.display = 'flex';
+                        btnSalidaComer.disabled = false;
+                        status.textContent = "Trabajando - Siguiente: Salida para comer";
+                    } else if (!currentSession.vueltaComer) {
+                        btnVueltaComer.style.display = 'flex';
+                        btnVueltaComer.disabled = false;
+                        status.textContent = "En pausa para comer - Siguiente: Vuelta de comer";
+                    } else if (!currentSession.finJornada) {
+                        btnFinJornada.style.display = 'flex';
+                        btnFinJornada.disabled = false;
+                        status.textContent = "Trabajando - Siguiente: Fin de jornada";
+                    }
+                } else {
+                    // Flujo directo sin fichaje de comida
+                    if (!currentSession.finJornada) {
+                        btnFinJornada.style.display = 'flex';
+                        btnFinJornada.disabled = false;
+                        status.textContent = "Trabajando sin comer - Siguiente: Fin de jornada";
+                    }
                 }
             }
         }
@@ -1215,7 +1260,14 @@
             const tipoServicio = document.getElementById('tipoServicio').value;
             const ubicacion = tipoServicio === 'nacional' ? document.getElementById('ubicacion').value : null;
             const esFestivo = document.getElementById('esFestivo').value === 'si';
+            const ficharComida = document.getElementById('ficharComida').value;
             const tipoEntrada = document.getElementById('tipoEntrada').value;
+            
+            // Obtener si come fuera (solo si no va a fichar comida y es nacional)
+            let seHaComido = 'no';
+            if (tipoServicio === 'nacional' && ficharComida === 'no') {
+                seHaComido = document.getElementById('seHaComido').value;
+            }
             
             // Calcular la hora de entrada con redondeo si es necesario
             let horaEntrada = now;
@@ -1229,13 +1281,14 @@
                 tipoServicio: tipoServicio,
                 ubicacion: ubicacion,
                 esFestivo: esFestivo,
+                ficharComida: ficharComida, // Nueva propiedad
                 entrada: formatTime(horaEntrada),
-                entradaOriginal: formatTime(now), // Guardamos la hora original
+                entradaOriginal: formatTime(now),
                 tipoEntrada: tipoEntrada,
                 salidaComer: null,
                 vueltaComer: null,
                 finJornada: null,
-                seHaComido: null,
+                seHaComido: seHaComido, // Ya establecido según el flujo
                 seHaCenado: null,
                 hayPernocta: null,
                 dia: getDayType(now, esFestivo),
@@ -1252,8 +1305,13 @@
 
         function ficharSalidaComer() {
             const now = new Date();
-            const seHaComido = currentSession.tipoServicio === 'nacional' ? document.getElementById('seHaComido').value : 'no';
             const tipoSalidaComer = document.getElementById('tipoSalidaComer').value;
+            
+            // Obtener si come fuera solo si es nacional (para internacional no aplica)
+            let seHaComido = 'no';
+            if (currentSession.tipoServicio === 'nacional') {
+                seHaComido = document.getElementById('seHaComidoSalida').value;
+            }
             
             // Calcular la hora de salida con redondeo si es necesario
             let horaSalida = now;
@@ -1264,7 +1322,7 @@
             currentSession.salidaComer = formatTime(horaSalida);
             currentSession.salidaComerOriginal = formatTime(now);
             currentSession.tipoSalidaComer = tipoSalidaComer;
-            currentSession.seHaComido = seHaComido;
+            currentSession.seHaComido = seHaComido; // Actualizar con la respuesta del modal
             
             saveCurrentSession();
             updateButtonsState();
@@ -1409,20 +1467,23 @@
             let horasTrabajadas = 0;
             let horasNocturnas = 0;
             
-            // Calcular horas de la mañana (hasta salida a comer)
-            if (salidaComer) {
-                const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
-                horasTrabajadas += horasManana;
-                horasNocturnas += calculateNightHours(entrada, salidaComer);
-            }
-            
-            // Calcular horas de la tarde (desde vuelta de comer hasta fin)
-            if (vueltaComer) {
-                const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
-                horasTrabajadas += horasTarde;
-                horasNocturnas += calculateNightHours(vueltaComer, finJornada);
-            } else if (!salidaComer) {
-                // Jornada sin pausa para comer (continua)
+            if (currentSession.ficharComida === 'si') {
+                // Flujo normal con fichaje de comida
+                // Calcular horas de la mañana (hasta salida a comer)
+                if (salidaComer) {
+                    const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
+                    horasTrabajadas += horasManana;
+                    horasNocturnas += calculateNightHours(entrada, salidaComer);
+                }
+                
+                // Calcular horas de la tarde (desde vuelta de comer hasta fin)
+                if (vueltaComer) {
+                    const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
+                    horasTrabajadas += horasTarde;
+                    horasNocturnas += calculateNightHours(vueltaComer, finJornada);
+                }
+            } else {
+                // Flujo sin comer sin fichaje de comida
                 const horasTotal = (finJornada - entrada) / (1000 * 60 * 60);
                 horasTrabajadas += horasTotal;
                 horasNocturnas += calculateNightHours(entrada, finJornada);
@@ -1689,35 +1750,38 @@
             let horasAntes13 = 0;
             let horasDespues13 = 0;
             
-            // Calcular horas de mañana (hasta salida a comer o 13:00)
-            if (salidaComer) {
-                const finMañana = salidaComer < limite13h ? salidaComer : limite13h;
-                if (finMañana > entrada) {
-                    horasAntes13 += (finMañana - entrada) / (1000 * 60 * 60);
+            if (currentSession.ficharComida === 'si') {
+                // Flujo normal con fichaje de comida
+                // Calcular horas de mañana (hasta salida a comer o 13:00)
+                if (salidaComer) {
+                    const finMañana = salidaComer < limite13h ? salidaComer : limite13h;
+                    if (finMañana > entrada) {
+                        horasAntes13 += (finMañana - entrada) / (1000 * 60 * 60);
+                    }
+                    if (salidaComer > limite13h) {
+                        horasDespues13 += (salidaComer - limite13h) / (1000 * 60 * 60);
+                    }
                 }
-                if (salidaComer > limite13h) {
-                    horasDespues13 += (salidaComer - limite13h) / (1000 * 60 * 60);
-                }
-            }
-            
-            // Calcular horas de tarde (desde vuelta de comer hasta fin)
-            if (vueltaComer) {
-                const inicioTarde = vueltaComer > limite13h ? vueltaComer : limite13h;
-                if (finJornada > inicioTarde) {
-                    if (inicioTarde >= limite13h) {
-                        horasDespues13 += (finJornada - inicioTarde) / (1000 * 60 * 60);
-                    } else {
-                        // Si vuelta de comer es antes de las 13:00
-                        if (finJornada <= limite13h) {
-                            horasAntes13 += (finJornada - vueltaComer) / (1000 * 60 * 60);
+                
+                // Calcular horas de tarde (desde vuelta de comer hasta fin)
+                if (vueltaComer) {
+                    const inicioTarde = vueltaComer > limite13h ? vueltaComer : limite13h;
+                    if (finJornada > inicioTarde) {
+                        if (inicioTarde >= limite13h) {
+                            horasDespues13 += (finJornada - inicioTarde) / (1000 * 60 * 60);
                         } else {
-                            horasAntes13 += (limite13h - vueltaComer) / (1000 * 60 * 60);
-                            horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                            // Si vuelta de comer es antes de las 13:00
+                            if (finJornada <= limite13h) {
+                                horasAntes13 += (finJornada - vueltaComer) / (1000 * 60 * 60);
+                            } else {
+                                horasAntes13 += (limite13h - vueltaComer) / (1000 * 60 * 60);
+                                horasDespues13 += (finJornada - limite13h) / (1000 * 60 * 60);
+                            }
                         }
                     }
                 }
-            } else if (!salidaComer) {
-                // Jornada continua sin pausa para comer
+            } else {
+                // Flujo sin comer sin fichaje de comida
                 if (finJornada <= limite13h) {
                     horasAntes13 += (finJornada - entrada) / (1000 * 60 * 60);
                 } else {
@@ -1871,7 +1935,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    devicePixelRatio: isMobile ? 2 : undefined, // Mejor calidad en móvil
+                    devicePixelRatio: isMobile ? 2 : undefined,
                     interaction: {
                         mode: 'index',
                         intersect: false,
@@ -1920,7 +1984,7 @@
                         x: {
                             display: true,
                             title: {
-                                display: !isMobile, // Ocultar título en móvil para ahorrar espacio
+                                display: !isMobile,
                                 text: 'Mes',
                                 font: {
                                     size: isMobile ? 12 : 14,
@@ -1935,7 +1999,7 @@
                                 font: {
                                     size: isMobile ? 10 : 12
                                 },
-                                maxRotation: isMobile ? 45 : 0, // Rotar etiquetas en móvil si es necesario
+                                maxRotation: isMobile ? 45 : 0,
                             }
                         },
                         y: {
@@ -2380,22 +2444,22 @@
             });
             
             // Filtrar sesiones
-const filteredSessions = sortedSessions.filter(session => {
-    // Filtro por fechas
-    const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
-    
-    if (fechaInicio) {
-        const inicioDate = new Date(fechaInicio);
-        if (sessionDate < inicioDate) return false;
-    }
-    
-    if (fechaFin) {
-        const finDate = new Date(fechaFin);
-        if (sessionDate > finDate) return false;
-    }
-    
-    // Filtro por tipo
-    switch(filtro) {
+            const filteredSessions = sortedSessions.filter(session => {
+                // Filtro por fechas
+                const sessionDate = new Date(session.fecha.split('/').reverse().join('-'));
+                
+                if (fechaInicio) {
+                    const inicioDate = new Date(fechaInicio);
+                    if (sessionDate < inicioDate) return false;
+                }
+                
+                if (fechaFin) {
+                    const finDate = new Date(fechaFin);
+                    if (sessionDate > finDate) return false;
+                }
+                
+                // Filtro por tipo
+                switch(filtro) {
                     case 'todos':
                         return true;
                     case 'L-V':
@@ -2465,6 +2529,10 @@ const filteredSessions = sortedSessions.filter(session => {
                         <div class="detail-content">
                             <div class="detail-grid">
                                 <div class="detail-item">
+                                    <span class="detail-label">Flujo de Comida:</span>
+                                    <span class="detail-value">${session.ficharComida === 'si' ? 'Con fichaje de comida' : 'Jornada corrida'}</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Entrada:</span>
                                     <span class="detail-value">${session.entrada}</span>
                                 </div>
@@ -2478,27 +2546,11 @@ const filteredSessions = sortedSessions.filter(session => {
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Salida Comer:</span>
-                                    <span class="detail-value">${session.salidaComer || '-'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Salida Comer Original:</span>
-                                    <span class="detail-value">${session.salidaComerOriginal || session.salidaComer || '-'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Tipo Salida Comer:</span>
-                                    <span class="detail-value">${session.tipoSalidaComer ? (session.tipoSalidaComer.charAt(0).toUpperCase() + session.tipoSalidaComer.slice(1)) : 'Puntual'}</span>
+                                    <span class="detail-value">${session.salidaComer || (session.ficharComida === 'no' ? 'No aplica (sin comer)' : '-')}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Vuelta Comer:</span>
-                                    <span class="detail-value">${session.vueltaComer || '-'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Vuelta Comer Original:</span>
-                                    <span class="detail-value">${session.vueltaComerOriginal || session.vueltaComer || '-'}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Tipo Vuelta Comer:</span>
-                                    <span class="detail-value">${session.tipoVueltaComer ? (session.tipoVueltaComer.charAt(0).toUpperCase() + session.tipoVueltaComer.slice(1)) : 'Puntual'}</span>
+                                    <span class="detail-value">${session.vueltaComer || (session.ficharComida === 'no' ? 'No aplica (sin comer)' : '-')}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Fin Jornada:</span>
@@ -2507,10 +2559,6 @@ const filteredSessions = sortedSessions.filter(session => {
                                 <div class="detail-item">
                                     <span class="detail-label">Fin Jornada Original:</span>
                                     <span class="detail-value">${session.finJornadaOriginal || session.finJornada}</span>
-                                </div>
-                                <div class="detail-item">
-                                    <span class="detail-label">Tipo Fin Jornada:</span>
-                                    <span class="detail-value">${session.tipoFinJornada ? (session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1)) : 'Puntual'}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Horas Trabajadas:</span>
@@ -2607,40 +2655,23 @@ const filteredSessions = sortedSessions.filter(session => {
                             </select>
                         </div>
                         <div class="form-group">
+                            <label>¿Fichó comida?</label>
+                            <select id="editFicharComida" onchange="toggleEditComidaFields()">
+                                <option value="si" ${(session.ficharComida || 'si') === 'si' ? 'selected' : ''}>Sí, fichó salida y vuelta de comer</option>
+                                <option value="no" ${session.ficharComida === 'no' ? 'selected' : ''}>No, trabajó sin comer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Entrada</label>
                             <input type="time" id="editEntrada" value="${session.entrada}" required>
                         </div>
-                        <div class="form-group">
-                            <label>Tipo de Entrada</label>
-                            <select id="editTipoEntrada">
-                                <option value="temprano" ${session.tipoEntrada === 'temprano' ? 'selected' : ''}>Temprano</option>
-                                <option value="tarde" ${session.tipoEntrada === 'tarde' ? 'selected' : ''}>Tarde</option>
-                                <option value="puntual" ${(session.tipoEntrada || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
+                        <div class="form-group" id="editSalidaComerGroup" style="display: ${(session.ficharComida || 'si') === 'si' ? 'block' : 'none'}">
                             <label>Salida Comer</label>
                             <input type="time" id="editSalidaComer" value="${session.salidaComer || ''}">
                         </div>
-                        <div class="form-group">
-                            <label>Tipo Salida Comer</label>
-                            <select id="editTipoSalidaComer">
-                                <option value="temprano" ${session.tipoSalidaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
-                                <option value="tarde" ${session.tipoSalidaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
-                                <option value="puntual" ${(session.tipoSalidaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
+                        <div class="form-group" id="editVueltaComerGroup" style="display: ${(session.ficharComida || 'si') === 'si' ? 'block' : 'none'}">
                             <label>Vuelta Comer</label>
                             <input type="time" id="editVueltaComer" value="${session.vueltaComer || ''}">
-                        </div>
-                        <div class="form-group">
-                            <label>Tipo Vuelta Comer</label>
-                            <select id="editTipoVueltaComer">
-                                <option value="temprano" ${session.tipoVueltaComer === 'temprano' ? 'selected' : ''}>Temprano</option>
-                                <option value="tarde" ${session.tipoVueltaComer === 'tarde' ? 'selected' : ''}>Tarde</option>
-                                <option value="puntual" ${(session.tipoVueltaComer || 'puntual') === 'puntual' ? 'selected' : ''}>Puntual</option>
-                            </select>
                         </div>
                         <div class="form-group">
                             <label>Fin Jornada</label>
@@ -2708,6 +2739,21 @@ const filteredSessions = sortedSessions.filter(session => {
                     pernoctaGroup.style.display = 'block'; // Siempre mostrar pernocta para internacional
                 }
             };
+
+            // Función para toggle de campos de comida en edición
+            window.toggleEditComidaFields = function() {
+                const ficharComida = document.getElementById('editFicharComida').value;
+                const salidaComerGroup = document.getElementById('editSalidaComerGroup');
+                const vueltaComerGroup = document.getElementById('editVueltaComerGroup');
+                
+                if (ficharComida === 'si') {
+                    salidaComerGroup.style.display = 'block';
+                    vueltaComerGroup.style.display = 'block';
+                } else {
+                    salidaComerGroup.style.display = 'none';
+                    vueltaComerGroup.style.display = 'none';
+                }
+            };
             
             // Event listener para cambio de ubicación
             document.getElementById('editUbicacion').addEventListener('change', function() {
@@ -2728,12 +2774,18 @@ const filteredSessions = sortedSessions.filter(session => {
                 session.tipoServicio = document.getElementById('editTipoServicio').value;
                 session.ubicacion = session.tipoServicio === 'nacional' ? document.getElementById('editUbicacion').value : null;
                 session.esFestivo = document.getElementById('editEsFestivo').value === 'si';
+                session.ficharComida = document.getElementById('editFicharComida').value;
                 session.entrada = document.getElementById('editEntrada').value;
-                session.tipoEntrada = document.getElementById('editTipoEntrada').value;
-                session.salidaComer = document.getElementById('editSalidaComer').value || null;
-                session.tipoSalidaComer = document.getElementById('editTipoSalidaComer').value;
-                session.vueltaComer = document.getElementById('editVueltaComer').value || null;
-                session.tipoVueltaComer = document.getElementById('editTipoVueltaComer').value;
+                
+                // Solo actualizar campos de comida si se fichó comida
+                if (session.ficharComida === 'si') {
+                    session.salidaComer = document.getElementById('editSalidaComer').value || null;
+                    session.vueltaComer = document.getElementById('editVueltaComer').value || null;
+                } else {
+                    session.salidaComer = null;
+                    session.vueltaComer = null;
+                }
+                
                 session.finJornada = document.getElementById('editFinJornada').value;
                 
                 if (session.tipoServicio === 'nacional') {
@@ -2772,17 +2824,21 @@ const filteredSessions = sortedSessions.filter(session => {
                 let horasTrabajadas = 0;
                 let horasNocturnas = 0;
                 
-                if (salidaComer) {
-                    const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
-                    horasTrabajadas += horasManana;
-                    horasNocturnas += calculateNightHours(entrada, salidaComer);
-                }
-                
-                if (vueltaComer) {
-                    const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
-                    horasTrabajadas += horasTarde;
-                    horasNocturnas += calculateNightHours(vueltaComer, finJornada);
-                } else if (!salidaComer) {
+                if (session.ficharComida === 'si') {
+                    // Flujo normal con fichaje de comida
+                    if (salidaComer) {
+                        const horasManana = (salidaComer - entrada) / (1000 * 60 * 60);
+                        horasTrabajadas += horasManana;
+                        horasNocturnas += calculateNightHours(entrada, salidaComer);
+                    }
+                    
+                    if (vueltaComer) {
+                        const horasTarde = (finJornada - vueltaComer) / (1000 * 60 * 60);
+                        horasTrabajadas += horasTarde;
+                        horasNocturnas += calculateNightHours(vueltaComer, finJornada);
+                    }
+                } else {
+                    // Flujo sin comer sin fichaje de comida
                     const horasTotal = (finJornada - entrada) / (1000 * 60 * 60);
                     horasTrabajadas += horasTotal;
                     horasNocturnas += calculateNightHours(entrada, finJornada);
@@ -2856,6 +2912,7 @@ const filteredSessions = sortedSessions.filter(session => {
                 'Tipo Servicio',
                 'Ubicación',
                 'Es Festivo',
+                'Flujo Comida',
                 'Entrada',
                 'Entrada Original',
                 'Tipo Entrada',
@@ -3011,11 +3068,12 @@ const filteredSessions = sortedSessions.filter(session => {
                     session.tipoServicio.charAt(0).toUpperCase() + session.tipoServicio.slice(1),
                     session.ubicacion || '-',
                     session.esFestivo ? 'Sí' : 'No',
+                    (session.ficharComida || 'si') === 'si' ? 'Con fichaje comida' : 'Jornada corrida',
                     session.entrada,
                     session.entradaOriginal || session.entrada,
                     session.tipoEntrada ? session.tipoEntrada.charAt(0).toUpperCase() + session.tipoEntrada.slice(1) : 'Puntual',
-                    session.salidaComer || '-',
-                    session.vueltaComer || '-',
+                    session.salidaComer || ((session.ficharComida || 'si') === 'no' ? 'N/A (sin comer)' : '-'),
+                    session.vueltaComer || ((session.ficharComida || 'si') === 'no' ? 'N/A (sin comer)' : '-'),
                     session.finJornada,
                     session.finJornadaOriginal || session.finJornada,
                     session.tipoFinJornada ? session.tipoFinJornada.charAt(0).toUpperCase() + session.tipoFinJornada.slice(1) : 'Puntual',
